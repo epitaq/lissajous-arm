@@ -52,8 +52,11 @@ class Arm :
         t = self.arm_length_2 / self.arm_length_0
         arm_length_0_vector = self.AngleLength2vector(angles[0], angles[2], self.arm_length_0)
         arm_length_1_vector = self.AngleLength2vector(angles[1], angles[2], self.arm_length_1)
+        arm_length_2_vector = self.AngleLength2vector(angles[0], angles[2], self.arm_length_2)
         
-        return arm_length_1_vector + t * arm_length_0_vector
+        # return arm_length_1_vector + t * arm_length_0_vector
+        return arm_length_1_vector + arm_length_2_vector
+
 
 if __name__ == '__main__':
     # 使用するサーボのチャンネル
