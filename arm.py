@@ -84,10 +84,10 @@ class Arm :
                 [servo0, servo1, servo2]
         """
         # 並行になってる棒の長さの比
-        t = self.arm_length_2 / self.arm_length_0
-        arm_length_0_vector = self.PCS2OCS(angles[0], angles[2], self.arm_length_0)
+        # t = self.arm_length_2 / self.arm_length_0
+        # arm_length_0_vector = self.PCS2OCS(angles[0], angles[2], self.arm_length_0)
         arm_length_1_vector = self.PCS2OCS(angles[1], angles[2], self.arm_length_1)
+        arm_length_2_vector = self.PCS2OCS(angles[0], angles[2], self.arm_length_2)
         
-        return arm_length_1_vector + t * arm_length_0_vector
-    
+        return arm_length_1_vector + arm_length_2_vector
 
