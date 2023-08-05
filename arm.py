@@ -1,4 +1,4 @@
-
+# TODO 座標の確認、式の確認カッコの範囲とか
 
 try:
     from board import SCL, SDA
@@ -55,13 +55,13 @@ class Arm :
     def _TanAngle (self, angle):
         return np.tan(np.radians(angle))
     def _ArcSinAngle (self, x):
-        print('arcsin: '+str(x))
+        # print('arcsin: '+str(x))
         return np.degrees(np.arcsin(x))
     def _ArcCosAngle (self, x):
-        print('arccos: ' + str(x))
+        # print('arccos: ' + str(x))
         return np.degrees(np.arccos(x))
     def _ArcTanAngle (self, x):
-        print('arctan: '+str(x))
+        # print('arctan: '+str(x))
         return np.degrees(np.arctan(x))
 
     # https://manabitimes.jp/math/1235
@@ -135,7 +135,8 @@ class Arm :
         b = self.arm_length_2
 
         # サーボ1個めの角度
-        arm_servo_0 = self._ArcTanAngle(x_2d / y_2d) + self._ArcCosAngle(
+        # + self._ArcCosAngle は±どっちでも
+        arm_servo_0 = self._ArcTanAngle(x_2d / y_2d) - self._ArcCosAngle(
             (x_2d**2 + y_2d**2 + a**2 - b**2) 
             / (2 * a * np.sqrt(x_2d**2 + y_2d**2))
         ) 

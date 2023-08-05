@@ -31,11 +31,11 @@ def test (arm, angles):
     for i in range(2):
         print('Angle2EffectorPoint')
         point = arm.Angle2EffectorPoint(angles)
-        print(point)
+        print([int(i) for i in point])
 
         print('EffectorPoint2Angle ')
         angles = arm.EffectorPoint2Angle(point)
-        print(angles)
+        print([int(i) for i in angles])
 
 
 
@@ -58,6 +58,6 @@ if __name__ == '__main__':
     arm = Debug(SERVO_CHANNEL, ARM_LENGTH)
     angles = [-40,60,30]
     test(arm, angles)
-    print(arm.PCS2OCS(100, -40,30))
+    # print(arm.PCS2OCS(100, -40,30))
 
     print(0)
