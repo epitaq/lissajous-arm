@@ -24,6 +24,19 @@ class Debug(arm.Arm) :
         self.arm_length_2 = ARM_LENGTH['arm2'] # arm0,1についてる方
         
 
+def test (arm, angles):
+    print('angles')
+    print(angles)
+
+    for i in range(2):
+        print('Angle2EffectorPoint')
+        point = arm.Angle2EffectorPoint(angles)
+        print(point)
+
+        print('EffectorPoint2Angle ')
+        angles = arm.EffectorPoint2Angle(point)
+        print(angles)
+
 
 
 if __name__ == '__main__':
@@ -53,16 +66,7 @@ if __name__ == '__main__':
     # # 終了
 
     arm = Debug(SERVO_CHANNEL, ARM_LENGTH)
-    angles = [10,30,40]
-    print(angles)
-    point = arm.AngleLength2EffectorPoint(angles)
-    angle = arm.Effector2Angle(point)
-    print('angle2effecotr')
-    print(point)
-    print('point2angle')
-    print(angle)
-    point1 = arm.AngleLength2EffectorPoint(angle)
-    print('point')
-    print(point1)
+    angles = [-60,60,0]
+    test(arm, angles)
 
     print(0)

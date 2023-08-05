@@ -81,21 +81,19 @@ class Arm :
     def OCS2PCS (self, xyz):
         """
             array型で直交座標を受けて極座標を返す
-            (angle_0, angle_1, r)
+            -> array(angle_0, angle_1, r)
         """
         r = np.sqrt(sum([i**2 for i in xyz]))
         angle_0 = np.arctan(xyz[1] / xyz[0])
         angle_1 = np.arctan((np.sqrt(xyz[0]**2 + xyz[1]**2) / xyz[2]**2))
         return np.array(angle_0, angle_1, r)
 
-    def AngleLength2EffectorPoint (self, angles: list[float]):
+    def Angle2EffectorPoint (self, angles: list[float]):
         """
             角度をとり、先端のベクトルを返す
             Effector:先端の位置
-            angles:角度
-                [servo0, servo1, servo2]
-            return:
-                [x, y, z]
+            angles: [servo0, servo1, servo2]
+            -> [x, y, z]
         """
         # 並行になってる棒の長さの比
         # t = self.arm_length_2 / self.arm_length_0
@@ -108,25 +106,39 @@ class Arm :
         return arm_length_1_vector + arm_length_2_vector
     
     # https://tajimarobotics.com/kinematics-two-link-model-2/
-    def Effector2Angle (self, OCS:list[float]):
+    def EffectorPoint2Angle (self, OCS:list[float]):
+        """
+            effector pointの三次元座標からサーボモーターの角度に変換する
+            OCS: [x, y, z]
+            -> [servo0, servo1, servo2]
+        """
         x_3d, y_3d, z_3d = OCS # 3次元座標を展開
         # アーム回転面での回転角: arm_servo_2 相当 極座標系のφ
-        arm_servo_2 = self._ArcCosAngle(x_3d / np.sqrt(x_3d**2 + y_3d**2)) 
+        # 直線上の時は0で割ることになる
+        if x_3d**2 + y_3d**2 == 0:
+            arm_servo_2 = 0
+        else :
+            arm_servo_2 = self._ArcCosAngle(x_3d / np.sqrt(x_3d**2 + y_3d**2)) 
+        arm_servo_2 = np.degrees(arm_servo_2)
+
         # ここからは原点とz軸とeffector Pointを通る二次元平面
         # effector point の二次元ベクトル
         x_2d = np.sqrt(x_3d**2 + y_3d**2)
         y_2d = z_3d
+
         # サーボ1個めの角度
-        arm_servo_0 = +- self._ArcCosAngle(
+        arm_servo_0 = - self._ArcCosAngle(
             (x_2d**2 + y_2d**2 + self.arm_length_0**2 - self.arm_length_2**2) 
             / (2*self.arm_length_0 * np.sqrt(x_2d**2 + y_2d**2))
             + self._ArcTanAngle(x_2d / y_2d)
         )
+        arm_servo_0 = np.degrees(arm_servo_0)
         # サーボ2個めの角度
         arm_servo_1 = self._ArcTanAngle(
-            (y_2d - self.arm_length_0 * self._SinAngle(arm_servo_0)) 
-            / (x_2d - self.arm_length_0 * self._CosAngle(arm_servo_0))
+            (x_2d - self.arm_length_0 * self._SinAngle(arm_servo_0)) 
+            / (y_2d - self.arm_length_0 * self._CosAngle(arm_servo_0))
         )
+        arm_servo_1 = np.degrees(arm_servo_1)
         return [arm_servo_0, arm_servo_1, arm_servo_2]
 
 
