@@ -36,7 +36,7 @@ class Arm :
         self.arm_length_2 = ARM_LENGTH['arm2'] # arm0,1についてる方
         
 
-    def MoveServosByAngle (self, servos: list[int], angles: list[int]):
+    def MoveServosByAngle (self, servos: list[float], angles: list[float]):
         """
             角度のリストから複数のサーボの角度を変更する
         """
@@ -48,11 +48,19 @@ class Arm :
         return np.sin(np.radians(angle))
     def _CosAngle (self, angle):
         return np.cos(np.radians(angle))
+    def _TanAngle (self, angle):
+        return np.tan(np.radians(angle))
+    def _ArcSinAngle (self, angle):
+        return np.arcsin(np.radians(angle))
+    def _ArcCosAngle (self, angle):
+        return np.arccos(np.radians(angle))
+    def _ArcTanAngle (self, angle):
+        return np.arctan(np.radians(angle))
 
     # https://manabitimes.jp/math/1235
     # 直交座標系 (Orthogonal coordinate system) OCS
     # 極座標系（polar coordinates system）PCS
-    def PCS2OCS (self, angle_0: int, angle_1: int, length: int) :
+    def PCS2OCS (self, angle_0: float, angle_1: float, length: float) :
         """
             極座標から直交座標に変換する
             angle_0 アーム動作面での原点とのなす角: 90-(arm_servo_0 | arm_servo_1)相当
@@ -76,18 +84,48 @@ class Arm :
         angle_1 = np.arctan((np.sqrt(xyz[0]**2 + xyz[1]**2) / xyz[2]**2))
         return np.array(angle_0, angle_1, r)
 
-    def AngleLength2HeadPosition (self, angles: list[int]):
+    def AngleLength2EffectorPoint (self, angles: list[float]):
         """
             角度をとり、先端のベクトルを返す
-            HeadPosition:先端の位置
+            Effector:先端の位置
             angles:角度
                 [servo0, servo1, servo2]
+            return:
+                [x, y, z]
         """
         # 並行になってる棒の長さの比
         # t = self.arm_length_2 / self.arm_length_0
         # arm_length_0_vector = self.PCS2OCS(angles[0], angles[2], self.arm_length_0)
+        # effect pointに繋がってるベクトルとそれに繋がってるベクトルの和で表せる
+        # effect pointに繋がってるベクトルは角度が繋がってない短い方のベクトルと同じだからその角度と自身の長さで求める
         arm_length_1_vector = self.PCS2OCS(angles[1], angles[2], self.arm_length_1)
         arm_length_2_vector = self.PCS2OCS(angles[0], angles[2], self.arm_length_2)
         
         return arm_length_1_vector + arm_length_2_vector
+    
+    # https://tajimarobotics.com/kinematics-two-link-model-2/
+    def Effector2Angle (self, OCS:list[float]):
+        x_3d, y_3d, z_3d = OCS # 3次元座標を展開
+        # アーム回転面での回転角: arm_servo_2 相当 極座標系のφ
+        arm_servo_2 = self._ArcCosAngle(x_3d / np.sqrt(x_3d**2 + y_3d**2)) 
+        # ここからは原点とz軸とeffector Pointを通る二次元平面
+        # effector point の二次元ベクトル
+        x_2d = np.sqrt(x_3d**2 + y_3d**2)
+        y_2d = z_3d
+        # サーボ1個めの角度
+        arm_servo_0 = +- self._ArcCosAngle(
+            (x_2d**2 + y_2d**2 + self.arm_length_0**2 - self.arm_length_2**2) 
+            / (2*self.arm_length_0 * np.sqrt(x_2d**2 + y_2d**2))
+            + self._ArcTanAngle(x_2d / y_2d)
+        )
+        # サーボ2個めの角度
+        arm_servo_1 = self._ArcTanAngle(
+            (y_2d - self.arm_length_0 * self._SinAngle(arm_servo_0)) 
+            / (x_2d - self.arm_length_0 * self._CosAngle(arm_servo_0))
+        )
+        return [arm_servo_0, arm_servo_1, arm_servo_2]
+
+
+
+
 
