@@ -55,11 +55,11 @@ class Arm :
     def _TanAngle (self, angle):
         return np.tan(np.radians(angle))
     def _ArcSinAngle (self, angle):
-        return np.arcsin(np.radians(angle))
+        return np.degrees(np.arcsin(angle))
     def _ArcCosAngle (self, angle):
-        return np.arccos(np.radians(angle))
+        return np.degrees(np.arccos(angle))
     def _ArcTanAngle (self, angle):
-        return np.arctan(np.radians(angle))
+        return np.degrees(np.arctan(angle))
 
     # https://manabitimes.jp/math/1235
     # 直交座標系 (Orthogonal coordinate system) OCS
@@ -84,9 +84,10 @@ class Arm :
             -> array(angle_0, angle_1, r)
         """
         r = np.sqrt(sum([i**2 for i in xyz]))
-        angle_0 = np.arctan(xyz[1] / xyz[0])
-        angle_1 = np.arctan((np.sqrt(xyz[0]**2 + xyz[1]**2) / xyz[2]**2))
-        return np.array(angle_0, angle_1, r)
+        angle_0 = self._ArcTanAngle(xyz[1] / xyz[0])
+        angle_1 = self._ArcTanAngle((np.sqrt(xyz[0]**2 + xyz[1]**2) / xyz[2]**2))
+        # angle_0, angle_1 = [np.degrees(i) for i in [angle_0, angle_1]]
+        return np.array([angle_0, angle_1, r])
 
     def Angle2EffectorPoint (self, angles: list[float]):
         """
@@ -119,7 +120,7 @@ class Arm :
             arm_servo_2 = 0
         else :
             arm_servo_2 = self._ArcCosAngle(x_3d / np.sqrt(x_3d**2 + y_3d**2)) 
-        arm_servo_2 = np.degrees(arm_servo_2)
+        # arm_servo_2 = np.degrees(arm_servo_2)
 
         # ここからは原点とz軸とeffector Pointを通る二次元平面
         # effector point の二次元ベクトル
@@ -132,13 +133,13 @@ class Arm :
             / (2*self.arm_length_0 * np.sqrt(x_2d**2 + y_2d**2))
             + self._ArcTanAngle(x_2d / y_2d)
         )
-        arm_servo_0 = np.degrees(arm_servo_0)
+        # arm_servo_0 = np.degrees(arm_servo_0)
         # サーボ2個めの角度
         arm_servo_1 = self._ArcTanAngle(
             (x_2d - self.arm_length_0 * self._SinAngle(arm_servo_0)) 
             / (y_2d - self.arm_length_0 * self._CosAngle(arm_servo_0))
         )
-        arm_servo_1 = np.degrees(arm_servo_1)
+        # arm_servo_1 = np.degrees(arm_servo_1)
         return [arm_servo_0, arm_servo_1, arm_servo_2]
 
 

@@ -55,18 +55,9 @@ if __name__ == '__main__':
         'arm2': 100 # 二つにくっついてる方
     }
 
-    # while True:
-    #     # アームの位置を取得 角度 座標
-    #     # カメラで異常がないか確認
-    #     # IF 異常があったら
-    #     # ELSE IF モード変更するか 警戒、攻撃
-    #     # 繰り返し
-    #     pass
-    
-    # # 終了
-
     arm = Debug(SERVO_CHANNEL, ARM_LENGTH)
     angles = [-60,60,0]
-    test(arm, angles)
+    # test(arm, angles)
+    print(arm.OCS2PCS([20,43,20]))
 
     print(0)
