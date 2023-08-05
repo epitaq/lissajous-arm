@@ -1,8 +1,12 @@
-from board import SCL, SDA
-import busio
 
-from adafruit_motor import servo
-from adafruit_pca9685 import PCA9685
+
+try:
+    from board import SCL, SDA
+    import busio
+    from adafruit_motor import servo
+    from adafruit_pca9685 import PCA9685
+except NotImplementedError as e:
+    print(e)
 
 import numpy as np
 
