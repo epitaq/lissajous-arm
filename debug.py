@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     arm = Debug(SERVO_CHANNEL, ARM_LENGTH)
     angles = [-60,60,0]
-    # test(arm, angles)
-    print(arm.OCS2PCS([20,43,20]))
+    test(arm, angles)
+    # print(arm.PCS2OCS(34,52,64))
 
     print(0)

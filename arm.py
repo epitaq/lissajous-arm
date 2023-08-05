@@ -72,9 +72,9 @@ class Arm :
             array型で返す
             [x, y, z]
         """
-        x = length * self._SinAngle(angle_0) * self._CosAngle(angle_1)
-        y = length * self._SinAngle(angle_0) * self._SinAngle(angle_1)
-        z = length * self._CosAngle(angle_0)
+        x = length * self._SinAngle(angle_1) * self._CosAngle(angle_0)
+        y = length * self._SinAngle(angle_1) * self._SinAngle(angle_0)
+        z = length * self._CosAngle(angle_1)
         return np.array([x, y, z])
 
     # https://keisan.casio.jp/exec/system/1359512223
@@ -83,11 +83,11 @@ class Arm :
             array型で直交座標を受けて極座標を返す
             -> array(angle_0, angle_1, r)
         """
+        x, y, z = xyz
         r = np.sqrt(sum([i**2 for i in xyz]))
-        angle_0 = self._ArcTanAngle(xyz[1] / xyz[0])
-        angle_1 = self._ArcTanAngle((np.sqrt(xyz[0]**2 + xyz[1]**2) / xyz[2]**2))
-        # angle_0, angle_1 = [np.degrees(i) for i in [angle_0, angle_1]]
-        return np.array([angle_0, angle_1, r])
+        angle_0 = self._ArcTanAngle(y / x)
+        angle_1 = self._ArcTanAngle(np.sqrt(x**2 + y**2) / z)
+        return np.array([r, angle_0, angle_1])
 
     def Angle2EffectorPoint (self, angles: list[float]):
         """
