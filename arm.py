@@ -1,5 +1,3 @@
-# TODO 座標の確認、式の確認カッコの範囲とか
-
 try:
     from board import SCL, SDA
     import busio
@@ -55,21 +53,25 @@ class Arm :
     def _TanAngle (self, angle):
         return np.tan(np.radians(angle))
     def _ArcSinAngle (self, x):
-        # print('arcsin: '+str(x))
+        print('arcsin: ' + str(x))
+        if x > 1: x = 1
+        elif x < -1: x = -1
         return np.degrees(np.arcsin(x))
     def _ArcCosAngle (self, x):
-        # print('arccos: ' + str(x))
+        print('arccos: ' + str(x))
+        if x > 1: x = 1
+        elif x < -1: x = -1
         return np.degrees(np.arccos(x))
     def _ArcTanAngle (self, x):
-        # print('arctan: '+str(x))
+        print('arctan: '+str(x))
         return np.degrees(np.arctan(x))
 
     # https://manabitimes.jp/math/1235
     # 直交座標系 (Orthogonal coordinate system) OCS
-    # 極座標系（polar coordinates system）PCS
+    # 球座標系（polar coordinates system）PCS
     def PCS2OCS (self, length: float, angle_0: float, angle_1: float) :
         """
-            極座標から直交座標に変換する
+            球座標から直交座標に変換する
             angle_0 アーム動作面での原点とのなす角: 90-(arm_servo_0 | arm_servo_1)相当
             angle_1 アーム回転面での回転角: arm_servo_2 相当
             array型で返す
@@ -83,12 +85,15 @@ class Arm :
     # https://keisan.casio.jp/exec/system/1359512223
     def OCS2PCS (self, xyz):
         """
-            array型で直交座標を受けて極座標を返す
-            -> array(angle_0, angle_1, r)
+            array型で直交座標を受けて球座標を返す
+            -> array(r, angle_0, angle_1)
         """
         x, y, z = xyz
-        r = np.sqrt(sum([i**2 for i in xyz]))
-        angle_0 = self._ArcTanAngle(np.sqrt(x**2 + y**2) / z)
+        # 長さ
+        r = np.sqrt(x**2 + y**2 + z**2)
+        # 角度の計算
+        # angle_0 = self._ArcTanAngle(np.sqrt(x**2 + y**2) / z)
+        angle_0 = self._ArcCosAngle(z / r)
         angle_1 = self._ArcTanAngle(y / x)
         return np.array([r, angle_0, angle_1])
 
@@ -121,9 +126,10 @@ class Arm :
             OCS: [x, y, z]
             -> [servo0, servo1, servo2]
         """
+        # TODO なんかlistの参照関連な気がする
         x_3d, y_3d, z_3d = OCS # 3次元座標を展開
 
-        # アーム回転面での回転角: arm_servo_2 相当 極座標系のφ
+        # アーム回転面での回転角: arm_servo_2 相当 球座標系のφ
         arm_servo_2 = self.OCS2PCS(OCS)[2] # 直交座標から球座標に変更しφを取得
 
         # ここからは原点とz軸とeffector Pointを通る二次元平面
@@ -136,6 +142,7 @@ class Arm :
 
         # サーボ1個めの角度
         # + self._ArcCosAngle は±どっちでも
+        # TODO とりあえずここが怪しい、arccosの計算で定義域をこえる
         arm_servo_0 = self._ArcTanAngle(x_2d / y_2d) - self._ArcCosAngle(
             (x_2d**2 + y_2d**2 + a**2 - b**2) 
             / (2 * a * np.sqrt(x_2d**2 + y_2d**2))
@@ -145,6 +152,7 @@ class Arm :
             (x_2d - a * self._SinAngle(arm_servo_0)) 
             / (y_2d - a * self._CosAngle(arm_servo_0))
         )
+
         return [arm_servo_0, arm_servo_1, arm_servo_2]
 
 
