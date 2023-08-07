@@ -11,7 +11,6 @@ import numpy as np
 class Arm :
     """
         りさじゅうのアームを動かす
-        (arm | attachment)_(servo | length)_`unique`
     """
 
     def __init__ (self, SERVO_CHANNEL, ARM_LENGTH ):
@@ -69,33 +68,33 @@ class Arm :
     # https://manabitimes.jp/math/1235
     # 直交座標系 (Orthogonal coordinate system) OCS
     # 球座標系（polar coordinates system）PCS
-    def PCS2OCS (self, length: float, angle_0: float, angle_1: float) :
+    def PCS2OCS (self, radial_distance: float, polar_angle: float, azimuthal_angle: float) :
         """
             球座標から直交座標に変換する
-            angle_0 アーム動作面での原点とのなす角: 90-(arm_servo_0 | arm_servo_1)相当
-            angle_1 アーム回転面での回転角: arm_servo_2 相当
+            polar_angle アーム動作面での原点とのなす角: 90-(arm_servo_0 | arm_servo_1)相当
+            azimuthal_angle アーム回転面での回転角: arm_servo_2 相当
             array型で返す
             [x, y, z]
         """
-        x = length * self._SinAngle(angle_0) * self._CosAngle(angle_1)
-        y = length * self._SinAngle(angle_0) * self._SinAngle(angle_1)
-        z = length * self._CosAngle(angle_0)
+        x = radial_distance * self._SinAngle(polar_angle) * self._CosAngle(azimuthal_angle)
+        y = radial_distance * self._SinAngle(polar_angle) * self._SinAngle(azimuthal_angle)
+        z = radial_distance * self._CosAngle(polar_angle)
         return np.array([x, y, z])
 
     # https://keisan.casio.jp/exec/system/1359512223
     def OCS2PCS (self, xyz):
         """
             array型で直交座標を受けて球座標を返す
-            -> array(r, angle_0, angle_1)
+            -> array(r, polar_angle, azimuthal_angle)
         """
         x, y, z = xyz
         # 長さ
         r = np.sqrt(x**2 + y**2 + z**2)
         # 角度の計算
-        # angle_0 = self._ArcTanAngle(np.sqrt(x**2 + y**2) / z)
-        angle_0 = self._ArcCosAngle(z / r)
-        angle_1 = self._ArcTanAngle(y / x)
-        return np.array([r, angle_0, angle_1])
+        # polar_angle = self._ArcTanAngle(np.sqrt(x**2 + y**2) / z)
+        polar_angle = self._ArcCosAngle(z / r)
+        azimuthal_angle = self._ArcTanAngle(y / x)
+        return np.array([r, polar_angle, azimuthal_angle])
 
     def Angle2EffectorPoint (self, angles: list[float]):
         """
@@ -107,14 +106,14 @@ class Arm :
         # effect pointに繋がってるベクトルとそれに繋がってるベクトルの和で表せる
         # effect pointに繋がってるベクトルは角度が繋がってない短い方のベクトルと同じだからその角度と自身の長さで求める
         arm_length_1_vector = self.PCS2OCS(
-            angle_0=angles[1], 
-            angle_1=angles[2], 
-            length=self.arm_length_1
+            polar_angle=angles[1], 
+            azimuthal_angle=angles[2], 
+            radial_distance=self.arm_length_1
         )
         arm_length_2_vector = self.PCS2OCS(
-            angle_0=angles[0], 
-            angle_1=angles[2], 
-            length=self.arm_length_2
+            polar_angle=angles[0], 
+            azimuthal_angle=angles[2], 
+            radial_distance=self.arm_length_2
         )
         
         return arm_length_1_vector + arm_length_2_vector

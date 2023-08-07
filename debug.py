@@ -25,18 +25,18 @@ class Debug(arm.Arm) :
             ax.plot(zero[0],zero[1],zero[2])
         # メイン描画
         # arm0
-        arm = self._T([0,0,0], self.PCS2OCS(length=self.arm_length_0, angle_0=angles[0], angle_1=angles[2]))
+        arm = self._T([0,0,0], self.PCS2OCS(radial_distance=self.arm_length_0, polar_angle=angles[0], azimuthal_angle=angles[2]))
         ax.plot(arm[0], arm[1], arm[2])
         # arm1
-        arm = self._T([0,0,0], self.PCS2OCS(length=self.arm_length_1, angle_0=angles[1], angle_1=angles[2]))
+        arm = self._T([0,0,0], self.PCS2OCS(radial_distance=self.arm_length_1, polar_angle=angles[1], azimuthal_angle=angles[2]))
         ax.plot(arm[0], arm[1], arm[2])
         # arm2
-        arm = self._T(self.PCS2OCS(length=self.arm_length_1, angle_0=angles[1], angle_1=angles[2]), 
+        arm = self._T(self.PCS2OCS(radial_distance=self.arm_length_1, polar_angle=angles[1], azimuthal_angle=angles[2]), 
                         self.Angle2EffectorPoint(angles))
         ax.plot(arm[0], arm[1], arm[2])
         # arm3
-        arm = self._T(self.PCS2OCS(length=self.arm_length_0, angle_0=angles[0], angle_1=angles[2]), 
-                        self.PCS2OCS(length=self.arm_length_0, angle_0=angles[0], angle_1=angles[2]) + self.PCS2OCS(length=self.arm_length_1, angle_0=angles[1], angle_1=angles[2]))
+        arm = self._T(self.PCS2OCS(radial_distance=self.arm_length_0, polar_angle=angles[0], azimuthal_angle=angles[2]), 
+                        self.PCS2OCS(radial_distance=self.arm_length_0, polar_angle=angles[0], azimuthal_angle=angles[2]) + self.PCS2OCS(radial_distance=self.arm_length_1, polar_angle=angles[1], azimuthal_angle=angles[2]))
         ax.plot(arm[0], arm[1], arm[2])
         # 描画範囲
         ax.set_xlim(-100,100)
