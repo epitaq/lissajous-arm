@@ -118,6 +118,9 @@ class Arm :
         
         return arm_length_1_vector + arm_length_2_vector
     
+    def angle2EffectorPoint2(self, angles: list[float]):
+        x = 
+    
     # https://tajimarobotics.com/kinematics-two-link-model-2/
     def EffectorPoint2Angle (self, OCS:list[float]):
         """
