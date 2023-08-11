@@ -8,7 +8,24 @@ except NotImplementedError as e:
 
 import numpy as np
 
-class Arm :
+class Arm:
+    def __init__ (self):
+        pass
+
+    def setAzimuthalAngle(self, azimuthal_angle: float):
+        pass
+
+    def setPolarAngle(self, polar_angle: float):
+        pass
+
+    def getPossiblePolarAngleRange(self, arm_length: float) -> list[int]:
+        pass
+
+    def searchFocalLengthContinuously(self, possible_range: list[int], search_range: list[int]) -> float:
+        pass
+
+
+class Arm_tmp :
     """
         りさじゅうのアームを動かす
     """
