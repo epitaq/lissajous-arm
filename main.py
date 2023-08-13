@@ -3,7 +3,10 @@ import camera
 import sensor
 import calculation
 
+
 if __name__ == '__main__':
+# SERVO_CHANNELS = {'root_servo': 0,'head_servo': 1,'root_head_servo': 2,'root_link_servo': 3}
+# ARM_LENGTHS = {'head_arm_length': 120,'root_head_arm_length': 100,'root_link_arm_length': 30}
     SERVO_CHANNELS = {
         'root_servo': 0,
         'head_servo': 1,
@@ -11,15 +14,15 @@ if __name__ == '__main__':
         'root_link_servo': 3
     }
     ARM_LENGTHS = {
-        'head_arm_length': 120,
-        'root_head_arm_length': 100,
-        'root_link_arm_length': 30
+        'head_arm_length': 220,
+        'root_head_arm_length': 210,
+        'root_link_arm_length': 85
     }
 
     camera = camera.Camera()
     arm = arm.Arm()
     sensor = sensor.Sensor()
-    calculation = calculation.Calculation()
+    # calculation = calculation.Calculation()
 
     # センサーに反応があった時追跡する範囲
     TRACKING_RANGE = 300
@@ -28,12 +31,16 @@ if __name__ == '__main__':
     # ピンホールカメラでいう焦点距離
     focal_length_list: list[float] = []
     # アームをどの長さで動かすのか[mm] TODO 可変式にしたい
-    arm_length: float = 100.0
+    rotation_radius: float = 100.0
 
     while True:
         # カメラから画像での手の二次元座標を取得[pixel]
         # 画像の中心を0とする
         picture_coordinates: list[float] = camera.getPictureCoordinates() 
+        # アームの回転半径をせっと
+        arm.setRotationRadius(
+            rotation_radius=rotation_radius
+        )
         # 画像の二次元座標からアームのz軸方向の回転を決定＆移動
         # 回転したできた新たな二次元座標の軸をxy軸とする
         arm_azimuthal_angle = calculation.azimuthalAngle(
@@ -43,10 +50,10 @@ if __name__ == '__main__':
         arm.setAzimuthalAngle(azimuthal_angle = arm_azimuthal_angle)
         # アームがxy軸とどれくらい角度を取れるのか[angle]
         arm_possible_polar_angles: list[int] = arm.getPossiblePolarAngleRange(
-            arm_length = arm_length
+            arm_length = rotation_radius
         )
         # 超音波センサーの閾値 [mm]
-        sensor_threshold: float = TRACKING_RANGE - arm_length
+        sensor_threshold: float = TRACKING_RANGE - rotation_radius
 
         # カメラに手の反応があった時
         if len(picture_coordinates) != 0 :
@@ -90,7 +97,7 @@ if __name__ == '__main__':
                     new_focal_length = calculation.getFocalLength(
                             picture_coordinates = picture_coordinates,
                             polar_angle = arm_polar_angle,
-                            distance_target_camera = arm_length + sensor_value
+                            distance_target_camera = rotation_radius + sensor_value
                         )
                     focal_length_list.append(new_focal_length)
                     break

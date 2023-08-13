@@ -6,49 +6,92 @@ from adafruit_servokit import ServoKit
 import numpy as np
 import copy
 
+import calculation
+
 class Arm:
+    '''
+        ここではアーム動作を一つにまとめほかからはただの棒のようにみせる
+    '''
+
     def __init__ (self, SERVO_CHANNELS, ARM_LENGTHS):
         # サーボの初期設定
         self.kit = ServoKit(channels=8)
         # sg90にパルスを揃える
         for channel in SERVO_CHANNELS.values():
-            self.kit.servo[channel].set_pulse_width_range(500, 2400)# ??
+            self.kit.servo[channel].set_pulse_width_range(500, 2400)
         
         self.SERVO_CHANNELS = SERVO_CHANNELS
-        # サーボの初期化
-        # self.root_servo = kit.servo[SERVO_CHANNELS['root_servo']].angle
-        # self.head_servo = kit.servo[SERVO_CHANNELS['head_servo']].angle
-        # self.root_head_servo = kit.servo[SERVO_CHANNELS['root_head_servo']].angle
-        # self.root_link_servo = kit.servo[SERVO_CHANNELS['root_link_servo']].angle
-        # まとめて動かす
-        # self.servos = [root_servo, head_servo, root_head_servo, root_link_servo]
         
         # アームの長さ
         self.head_arm_length = ARM_LENGTHS['head_arm_length']
         self.root_head_arm_length = ARM_LENGTHS['root_head_arm_length']
         self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
 
+        # アームの初期位置の設定
+        self.kit.servo[SERVO_CHANNELS['root_link_servo']].angle = 90
+        self.kit.servo[SERVO_CHANNELS['root_head_servo']].angle = 0
+
     def moveServos (self, angles= {'root_servo': -1,'head_servo':-1,'root_head_servo': -1,'root_link_servo': -1}):
         '''
             サーボをうごかす
             anglesは辞書型で入力する。-1の時は動かさない
         '''
+        print('moveServos: ')
+        print(angles)
         for id, channel in self.SERVO_CHANNELS.items():
             angle = angles[id]
+            # サーボの取り付けによって補正が必要 
+            # 追加するたびに getServoAnglesも変更 TODO
+            if id == 'root_link_servo':
+                angle = 180 - angle
             if angle != -1:
                 self.kit.servo[channel].angle = angle
     
     def getServoAngles (self):
         '''
             サーボの角度を取得する
+            あまり精度はよくない
         '''
         angles = copy.copy(self.SERVO_CHANNELS)
         for id, channel in self.SERVO_CHANNELS.items():
-            angles[id] = self.kit.servo[channel].angle
+            # サーボの角度
+            angle = self.kit.servo[channel].angle
+            # 0以下だとほかでバグるたぶん180でも
+            if angle < 0: angle = 0
+            elif angle > 180: angle=180
+            # 実際の角度とサーボの角度変換 TODO
+            if id == 'root_link_servo':
+                angle = 180 - angle
+            # 登録
+            angles[id] = angle
         return angles
 
     def setRotationRadius(self, rotation_radius: float):
-        pass
+        between_angle = calculation.angleFromRotationRadius(
+            rotation_radius = rotation_radius, 
+            length_0 = self.root_head_arm_length, 
+            length_1 = self.head_arm_length
+        )
+        print('between_angle: ' + str(between_angle))
+        angles = self.getServoAngles()
+        root_head_servo = angles['root_head_servo']
+        # root_head_servoを基準に指定の長さに変形する
+        root_link_servo = between_angle + root_head_servo
+        # 範囲をこえていた場合
+        if root_link_servo < 0 : 
+            # この場合は少ないはず、というか望ましくない
+            root_head_servo -= root_link_servo
+            root_link_servo = 0
+        elif root_link_servo > 180 :
+            root_head_servo -= root_link_servo - 180
+            root_link_servo = 180
+        # アームの変形
+        self.moveServos({ 
+            'root_servo': -1,
+            'head_servo': -1,
+            'root_head_servo': root_head_servo,
+            'root_link_servo': root_link_servo
+        })
 
     def setAzimuthalAngle(self, azimuthal_angle: float):
         pass
