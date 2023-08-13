@@ -7,6 +7,7 @@ def angleFromRotationRadius (rotation_radius, length_0, length_1):
     return angle
 
 def azimuthalAngle(x: float, y: float) -> float:
+    azimuthal_angle = arcTan(y / x)
     return azimuthal_angle
 
 def getFocalLength(picture_coordinates: list[float], polar_angle: float, distance_target_camera: float) -> float:

@@ -67,6 +67,9 @@ class Arm:
         return angles
 
     def setRotationRadius(self, rotation_radius: float):
+        '''
+            アームが動作する半径に長さをセットする
+        '''
         between_angle = calculation.angleFromRotationRadius(
             rotation_radius = rotation_radius, 
             length_0 = self.root_head_arm_length, 
@@ -94,7 +97,8 @@ class Arm:
         })
 
     def setAzimuthalAngle(self, azimuthal_angle: float):
-        pass
+        channel = self.SERVO_CHANNELS['root_servo']
+        self.kit.servo[channel].angle = azimuthal_angle
 
     def setPolarAngle(self, polar_angle: float):
         pass
