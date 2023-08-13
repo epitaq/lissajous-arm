@@ -1,11 +1,3 @@
-# try:
-#     from board import SCL, SDA
-#     import busio
-#     from adafruit_motor import servo
-#     from adafruit_pca9685 import PCA9685
-# except NotImplementedError as e:
-#     print(e)
-
 # 新しい方のライブラリ使う
 # https://docs.circuitpython.org/projects/servokit/en/latest/
 # https://qiita.com/hinemoss/items/770e2280d33278b594be
@@ -18,8 +10,8 @@ class Arm:
         # サーボの初期設定
         kit = ServoKit(channels=8)
         # sg90にパルスを揃える
-        for i in range(16):
-            kit.servo[i].set_pulse_width_range(500, 2400)
+        for channel in SERVO_CHANNELS.keys():
+            kit.servo[channel].set_pulse_width_range(500, 2400)# ??
         
         # サーボの初期化
         root_servo = kit.servo[SERVO_CHANNELS['root_servo']].angle
@@ -27,7 +19,7 @@ class Arm:
         root_head_servo = kit.servo[SERVO_CHANNELS['root_head_servo']].angle
         root_link_servo = kit.servo[SERVO_CHANNELS['root_link_servo']].angle
         # まとめて動かす
-        self.servos = [root_servo, head_servo, root_head_servo, root_link_servo]
+        # self.servos = [root_servo, head_servo, root_head_servo, root_link_servo]
         
         # アームの長さ
         self.head_arm_length = ARM_LENGTHS['head_arm_length']
