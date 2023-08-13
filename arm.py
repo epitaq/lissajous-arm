@@ -5,6 +5,8 @@ try:
     from adafruit_pca9685 import PCA9685
 except NotImplementedError as e:
     print(e)
+except ImportError as e:
+    print(e)
 
 import numpy as np
 

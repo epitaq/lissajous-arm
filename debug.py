@@ -1,7 +1,10 @@
 import arm
+import matplotlib
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
 import numpy as np
+
+matplotlib.use('TkAgg')
 
 class Debug(arm.Arm) :
     # ラズパイ関連の削除
