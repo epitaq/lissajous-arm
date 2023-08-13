@@ -4,20 +4,22 @@
 from adafruit_servokit import ServoKit
 
 import numpy as np
+import copy
 
 class Arm:
     def __init__ (self, SERVO_CHANNELS, ARM_LENGTHS):
         # サーボの初期設定
-        kit = ServoKit(channels=8)
+        self.kit = ServoKit(channels=8)
         # sg90にパルスを揃える
         for channel in SERVO_CHANNELS.values():
-            kit.servo[channel].set_pulse_width_range(500, 2400)# ??
+            self.kit.servo[channel].set_pulse_width_range(500, 2400)# ??
         
+        self.SERVO_CHANNELS = SERVO_CHANNELS
         # サーボの初期化
-        root_servo = kit.servo[SERVO_CHANNELS['root_servo']].angle
-        head_servo = kit.servo[SERVO_CHANNELS['head_servo']].angle
-        root_head_servo = kit.servo[SERVO_CHANNELS['root_head_servo']].angle
-        root_link_servo = kit.servo[SERVO_CHANNELS['root_link_servo']].angle
+        # self.root_servo = kit.servo[SERVO_CHANNELS['root_servo']].angle
+        # self.head_servo = kit.servo[SERVO_CHANNELS['head_servo']].angle
+        # self.root_head_servo = kit.servo[SERVO_CHANNELS['root_head_servo']].angle
+        # self.root_link_servo = kit.servo[SERVO_CHANNELS['root_link_servo']].angle
         # まとめて動かす
         # self.servos = [root_servo, head_servo, root_head_servo, root_link_servo]
         
@@ -25,6 +27,28 @@ class Arm:
         self.head_arm_length = ARM_LENGTHS['head_arm_length']
         self.root_head_arm_length = ARM_LENGTHS['root_head_arm_length']
         self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
+
+    def moveServos (self, angles= {'root_servo': -1,'head_servo':-1,'root_head_servo': -1,'root_link_servo': -1}):
+        '''
+            サーボをうごかす
+            anglesは辞書型で入力する。-1の時は動かさない
+        '''
+        for id, channel in self.SERVO_CHANNELS.items():
+            angle = angles[id]
+            if angle != -1:
+                self.kit.servo[channel].angle = angle
+    
+    def getServoAngles (self):
+        '''
+            サーボの角度を取得する
+        '''
+        angles = copy.copy(self.SERVO_CHANNELS)
+        for id, channel in self.SERVO_CHANNELS.items():
+            angles[id] = self.kit.servo[channel].angle
+        return angles
+
+    def setRotationRadius(self, rotation_radius: float):
+        pass
 
     def setAzimuthalAngle(self, azimuthal_angle: float):
         pass
