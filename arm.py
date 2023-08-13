@@ -10,7 +10,7 @@ class Arm:
         # サーボの初期設定
         kit = ServoKit(channels=8)
         # sg90にパルスを揃える
-        for channel in SERVO_CHANNELS.keys():
+        for channel in SERVO_CHANNELS.values():
             kit.servo[channel].set_pulse_width_range(500, 2400)# ??
         
         # サーボの初期化
