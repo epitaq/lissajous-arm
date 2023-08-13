@@ -1,16 +1,38 @@
-try:
-    from board import SCL, SDA
-    import busio
-    from adafruit_motor import servo
-    from adafruit_pca9685 import PCA9685
-except NotImplementedError as e:
-    print(e)
+# try:
+#     from board import SCL, SDA
+#     import busio
+#     from adafruit_motor import servo
+#     from adafruit_pca9685 import PCA9685
+# except NotImplementedError as e:
+#     print(e)
+
+# 新しい方のライブラリ使う
+# https://docs.circuitpython.org/projects/servokit/en/latest/
+# https://qiita.com/hinemoss/items/770e2280d33278b594be
+from adafruit_servokit import ServoKit
 
 import numpy as np
 
 class Arm:
-    def __init__ (self):
-        pass
+    def __init__ (self, SERVO_CHANNELS, ARM_LENGTHS):
+        # サーボの初期設定
+        kit = ServoKit(channels=8)
+        # sg90にパルスを揃える
+        for i in range(16):
+            kit.servo[i].set_pulse_width_range(500, 2400)
+        
+        # サーボの初期化
+        root_servo = kit.servo[SERVO_CHANNELS['root_servo']].angle
+        head_servo = kit.servo[SERVO_CHANNELS['head_servo']].angle
+        root_head_servo = kit.servo[SERVO_CHANNELS['root_head_servo']].angle
+        root_link_servo = kit.servo[SERVO_CHANNELS['root_link_servo']].angle
+        # まとめて動かす
+        self.servos = [root_servo, head_servo, root_head_servo, root_link_servo]
+        
+        # アームの長さ
+        self.head_arm_length = ARM_LENGTHS['head_arm_length']
+        self.root_head_arm_length = ARM_LENGTHS['root_head_arm_length']
+        self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
 
     def setAzimuthalAngle(self, azimuthal_angle: float):
         pass

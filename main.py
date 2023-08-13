@@ -4,6 +4,18 @@ import sensor
 import calculation
 
 if __name__ == '__main__':
+    SERVO_CHANNELS = {
+        'root_servo': 0,
+        'head_servo': 1,
+        'root_head_servo': 2,
+        'root_link_servo': 3
+    }
+    ARM_LENGTHS = {
+        'head_arm_length': 120,
+        'root_head_arm_length': 100,
+        'root_link_arm_length': 30
+    }
+
     camera = camera.Camera()
     arm = arm.Arm()
     sensor = sensor.Sensor()
