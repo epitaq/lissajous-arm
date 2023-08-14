@@ -7,11 +7,14 @@ import numpy as np
 import copy
 
 import calculation
+import sensor
 
 class Arm:
     '''
         ここではアーム動作を一つにまとめほかからはただの棒のようにみせる
     '''
+
+    sensor = sensor.Sensor()
 
     def __init__ (self, SERVO_CHANNELS, ARM_LENGTHS):
         # サーボの初期設定
@@ -28,8 +31,23 @@ class Arm:
         self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
 
         # アームの初期位置の設定
-        self.kit.servo[SERVO_CHANNELS['root_link_servo']].angle = 90
-        self.kit.servo[SERVO_CHANNELS['root_head_servo']].angle = 0
+        # self.kit.servo[SERVO_CHANNELS['root_link_servo']].angle = 90
+        # self.kit.servo[SERVO_CHANNELS['root_head_servo']].angle = 0
+        self.moveServos(angles={
+            'root_servo': 0,
+            'head_servo': 0,
+            'root_head_servo': 0,
+            'root_link_servo': 90}
+        )
+
+        # アーム同士がなす角
+        self.arm_between_angle = 0
+        # 合成ベクトルとアームのなす角
+        self.composite_root_head_arm_angle = 0
+        self.composite_root_link_arm_angle = 0
+
+        # 動作可能な天頂角範囲
+        self.possible_polar_angle_range = []
 
     def moveServos (self, angles= {'root_servo': -1,'head_servo':-1,'root_head_servo': -1,'root_link_servo': -1}):
         '''
@@ -40,13 +58,42 @@ class Arm:
         print(angles)
         for id, channel in self.SERVO_CHANNELS.items():
             angle = angles[id]
-            # サーボの取り付けによって補正が必要 
-            # 追加するたびに getServoAnglesも変更 TODO
-            if id == 'root_link_servo':
-                angle = 180 - angle
             if angle != -1:
+                # 範囲の制限
+                if id == 'root_servo': 
+                    if angle > 360: angle-=360
+                    elif angle < 0: angle=0
+                else:
+                    if angle > 180: angle=180
+                    elif angle < 0: angle=0
+                # サーボの取り付け向きによって補正が必要 
+                # 追加するたびに getServoAnglesも変更 TODO
+                if id == 'root_link_servo':
+                    angle = 180 - angle
                 self.kit.servo[channel].angle = angle
-    
+            elif id == 'head_servo':
+                # 指示があるときはそれに従うがないときは自動で追尾する
+                angle = 90 - self.composite_root_link_arm_angle
+                self.kit.servo[channel].angle = angle
+        return
+
+    def moveServosDifference (self, difference_angles= {'root_servo': 0,'head_servo': 0,'root_head_servo': 0,'root_link_servo': 0}):
+        '''
+            角度の差分からサーボをうごかす
+            anglesは辞書型で入力する。
+        '''
+        print('moveServos: ')
+        print(difference_angles)
+        angles = copy.copy(self.SERVO_CHANNELS)
+        current_angles_list = self.getServoAngles()
+        for id, channel in self.SERVO_CHANNELS.items():
+            difference_angle = difference_angles[id] # 差分
+            current_angle = current_angles_list[id] # 現在の
+            angles[id] = difference_angle + current_angle
+            print('servo difference: '+ id + str(difference_angle + current_angle))
+        self.moveServos(angles=angles)
+        return
+
     def getServoAngles (self):
         '''
             サーボの角度を取得する
@@ -75,7 +122,19 @@ class Arm:
             length_0 = self.root_head_arm_length, 
             length_1 = self.head_arm_length
         )
+        # アームのなす角を保存
+        self.arm_between_angle = between_angle
+        # おかしい TODO
+        self.composite_root_head_arm_angle = - calculation.arcCos(
+            (self.root_head_arm_length + self.head_arm_length*calculation.cos(between_angle))
+            / rotation_radius
+        )
+        self.composite_root_link_arm_angle = self.arm_between_angle + self.composite_root_head_arm_angle
+
         print('between_angle: ' + str(between_angle))
+        print('composite_root_head_arm_angle: '+str(self.composite_root_head_arm_angle))
+        print('composite_root_link_arm_angle: '+str(self.composite_root_link_arm_angle))
+
         angles = self.getServoAngles()
         root_head_servo = angles['root_head_servo']
         # root_head_servoを基準に指定の長さに変形する
@@ -95,168 +154,52 @@ class Arm:
             'root_head_servo': root_head_servo,
             'root_link_servo': root_link_servo
         })
+        return
 
     def setAzimuthalAngle(self, azimuthal_angle: float):
-        channel = self.SERVO_CHANNELS['root_servo']
-        self.kit.servo[channel].angle = azimuthal_angle
+        # channel = self.SERVO_CHANNELS['root_servo']
+        # self.kit.servo[channel].angle = azimuthal_angle
+        self.moveServos({ 
+            'root_servo': azimuthal_angle,
+            'head_servo': -1,
+            'root_head_servo': -1,
+            'root_link_servo': -1
+        })
+        return
 
     def setPolarAngle(self, polar_angle: float):
-        pass
+        print('root_head_servo: '+ str(polar_angle + self.composite_root_head_arm_angle))
+        print('root_link_servo: '+ str(polar_angle + self.composite_root_link_arm_angle))
+        self.moveServos({ 
+            'root_servo': -1,
+            'head_servo': -1,
+            'root_head_servo': polar_angle + self.composite_root_head_arm_angle,
+            'root_link_servo': polar_angle + self.composite_root_link_arm_angle
+        })
+        return
 
-    def getPossiblePolarAngleRange(self, arm_length: float) -> list[int]:
-        pass
+    def getPossiblePolarAngleRange(self) -> list[int]:
+        '''
+            変更可能な天頂角の範囲リストを返す
+        '''
+        min_range = int(self.composite_root_head_arm_angle)
+        max_range = int(180-self.composite_root_link_arm_angle)
+        angle_range = [min_range, max_range]
+        # 保存
+        self.possible_polar_angle_range = angle_range
+        return angle_range
 
-    def searchFocalLengthContinuously(self, possible_range: list[int], search_range: list[int]) -> float:
-        pass
-
-
-class Arm_tmp :
-    """
-        りさじゅうのアームを動かす
-    """
-
-    def __init__ (self, SERVO_CHANNEL, ARM_LENGTH ):
-        i2c = busio.I2C(SCL, SDA)
-
-        # Create a simple PCA9685 class instance.
-        pca = PCA9685(i2c)
-
-        # サーボ動かす用のやつ
-        # arm用
-        arm_servo_0 = servo.Servo(pca.channels[SERVO_CHANNEL['arm0']])
-        arm_servo_1 = servo.Servo(pca.channels[SERVO_CHANNEL['arm1']])
-        arm_servo_2 = servo.Servo(pca.channels[SERVO_CHANNEL['arm2']])
-        self.arm_servo = [arm_servo_0, arm_servo_1, arm_servo_2]
-        # アタッチメント用
-        attachment_servo_0 = servo.Servo(pca.channels[SERVO_CHANNEL['attachment0']])
-        attachment_servo_1 = servo.Servo(pca.channels[SERVO_CHANNEL['attachment1']])
-        self.attachment_servo = [attachment_servo_0, attachment_servo_1]
-
-
-        # アームの長さ
-        self.arm_length_0 = ARM_LENGTH['arm0'] # 支点につてる短い方
-        self.arm_length_1 = ARM_LENGTH['arm1'] # 支点についてる長い方, arm2に繋がってる方
-        self.arm_length_2 = ARM_LENGTH['arm2'] # arm0,1についてる方
-        
-
-    def MoveServosByAngle (self, servos: list[float], angles: list[float]):
-        """
-            角度のリストから複数のサーボの角度を変更する
-        """
-        for index, servo in enumerate(servos):
-            servo.angle = angles[index]
-
-    # sin cosの計算
-    def _SinAngle (self, angle):
-        return np.sin(np.radians(angle))
-    def _CosAngle (self, angle):
-        return np.cos(np.radians(angle))
-    def _TanAngle (self, angle):
-        return np.tan(np.radians(angle))
-    def _ArcSinAngle (self, x):
-        print('arcsin: ' + str(x))
-        if x > 1: x = 1
-        elif x < -1: x = -1
-        return np.degrees(np.arcsin(x))
-    def _ArcCosAngle (self, x):
-        print('arccos: ' + str(x))
-        if x > 1: x = 1
-        elif x < -1: x = -1
-        return np.degrees(np.arccos(x))
-    def _ArcTanAngle (self, x):
-        print('arctan: '+str(x))
-        return np.degrees(np.arctan(x))
-
-    # https://manabitimes.jp/math/1235
-    # 直交座標系 (Orthogonal coordinate system) OCS
-    # 球座標系（polar coordinates system）PCS
-    def PCS2OCS (self, radial_distance: float, polar_angle: float, azimuthal_angle: float) :
-        """
-            球座標から直交座標に変換する
-            polar_angle アーム動作面での原点とのなす角: 90-(arm_servo_0 | arm_servo_1)相当
-            azimuthal_angle アーム回転面での回転角: arm_servo_2 相当
-            array型で返す
-            [x, y, z]
-        """
-        x = radial_distance * self._SinAngle(polar_angle) * self._CosAngle(azimuthal_angle)
-        y = radial_distance * self._SinAngle(polar_angle) * self._SinAngle(azimuthal_angle)
-        z = radial_distance * self._CosAngle(polar_angle)
-        return np.array([x, y, z])
-
-    # https://keisan.casio.jp/exec/system/1359512223
-    def OCS2PCS (self, xyz):
-        """
-            array型で直交座標を受けて球座標を返す
-            -> array(r, polar_angle, azimuthal_angle)
-        """
-        x, y, z = xyz
-        # 長さ
-        r = np.sqrt(x**2 + y**2 + z**2)
-        # 角度の計算
-        # polar_angle = self._ArcTanAngle(np.sqrt(x**2 + y**2) / z)
-        polar_angle = self._ArcCosAngle(z / r)
-        azimuthal_angle = self._ArcTanAngle(y / x)
-        return np.array([r, polar_angle, azimuthal_angle])
-
-    def Angle2EffectorPoint (self, angles: list[float]):
-        """
-            角度をとり、先端のベクトルを返す
-            Effector:先端の位置
-            angles: [servo0, servo1, servo2]
-            -> [x, y, z]
-        """
-        # effect pointに繋がってるベクトルとそれに繋がってるベクトルの和で表せる
-        # effect pointに繋がってるベクトルは角度が繋がってない短い方のベクトルと同じだからその角度と自身の長さで求める
-        arm_length_1_vector = self.PCS2OCS(
-            polar_angle=angles[1], 
-            azimuthal_angle=angles[2], 
-            radial_distance=self.arm_length_1
-        )
-        arm_length_2_vector = self.PCS2OCS(
-            polar_angle=angles[0], 
-            azimuthal_angle=angles[2], 
-            radial_distance=self.arm_length_2
-        )
-        
-        return arm_length_1_vector + arm_length_2_vector
-    
-    # https://tajimarobotics.com/kinematics-two-link-model-2/
-    def EffectorPoint2Angle (self, OCS:list[float]):
-        """
-            effector pointの三次元座標からサーボモーターの角度に変換する
-            OCS: [x, y, z]
-            -> [servo0, servo1, servo2]
-        """
-        # TODO なんかlistの参照関連な気がする
-        x_3d, y_3d, z_3d = OCS # 3次元座標を展開
-
-        # アーム回転面での回転角: arm_servo_2 相当 球座標系のφ
-        arm_servo_2 = self.OCS2PCS(OCS)[2] # 直交座標から球座標に変更しφを取得
-
-        # ここからは原点とz軸とeffector Pointを通る二次元平面
-        # effector point の二次元ベクトル
-        x_2d = np.sqrt(x_3d**2 + y_3d**2)
-        y_2d = z_3d
-        # アームの長さ
-        a = self.arm_length_0
-        b = self.arm_length_2
-
-        # サーボ1個めの角度
-        # + self._ArcCosAngle は±どっちでも
-        # TODO とりあえずここが怪しい、arccosの計算で定義域をこえる
-        arm_servo_0 = self._ArcTanAngle(x_2d / y_2d) - self._ArcCosAngle(
-            (x_2d**2 + y_2d**2 + a**2 - b**2) 
-            / (2 * a * np.sqrt(x_2d**2 + y_2d**2))
-        ) 
-        # サーボ2個めの角度
-        arm_servo_1 = self._ArcTanAngle(
-            (x_2d - a * self._SinAngle(arm_servo_0)) 
-            / (y_2d - a * self._CosAngle(arm_servo_0))
-        )
-
-        return [arm_servo_0, arm_servo_1, arm_servo_2]
-
-
-
-
-
+    def searchFocalLengthContinuously(self, search_range: list[int], sensor_threshold: float) -> float:
+        '''
+            連続的にサーボをうごかし焦点距離を探る
+            反応なかったら０を返す
+        '''
+        min_range = max(self.possible_polar_angle_range[0], search_range[0])
+        max_range = min(self.possible_polar_angle_range[1], search_range[1])
+        for angle in range(min_range, max_range):
+            # 超音波センサーの値を取得 [mm]
+            sensor_value: float = sensor.getValue()
+            if sensor_value < sensor_threshold:
+                return angle
+        else:
+            return 0

@@ -10,10 +10,14 @@ def azimuthalAngle(x: float, y: float) -> float:
     azimuthal_angle = arcTan(y / x)
     return azimuthal_angle
 
-def getFocalLength(picture_coordinates: list[float], polar_angle: float, distance_target_camera: float) -> float:
+def getFocalLength(picture_coordinates: list[float], polar_angle: float) -> float:
+    x_2d, y_2d = picture_coordinates
+    focal_length = np.sqrt((y_2d**2)/(tan(polar_angle)**2) - (x_2d**2))
     return focal_length
 
 def getPolarAngleFromFocalLength(picture_coordinates: list[float], focal_length: float) -> float:
+    x_2d, y_2d = picture_coordinates
+    polar_angle = arcTan((y_2d) / (np.sqrt(x_2d**2 + focal_length**2)))
     return polar_angle
 
 # sin cosの計算
