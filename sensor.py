@@ -13,10 +13,12 @@ class Sensor:
         sw_status = GPIO.input(self.sw_pin)
         if sw_status == 0:
             # ON
-            value = 1
+            # 近い距離
+            value = 10
         else:
             # OFF
-            value = 0
+            # 遠い距離
+            value = 100000
         return value
 
 # import sensor

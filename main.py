@@ -29,13 +29,13 @@ if __name__ == '__main__':
     print('instance [OK]')
 
     # センサーに反応があった時追跡する範囲
-    TRACKING_RANGE = 300
+    TRACKING_RANGE = 400
     # 見つからなかった時用の予備の探索範囲 [angle]
     SUB_SEARCH_RANGE = 10
     # ピンホールカメラでいう焦点距離
     focal_length_list: list[float] = []
     # アームをどの長さで動かすのか[mm] TODO 可変式にしたい
-    rotation_radius: float = 300.0
+    rotation_radius: float = 100.0
 
     print('start lissajous-arm')
     while True:
@@ -50,6 +50,7 @@ if __name__ == '__main__':
             print('target [OK]')
             # 画像の二次元座標からアームのz軸方向の回転を決定＆移動
             # 回転したできた新たな二次元座標の軸をxy軸とする
+            # TODO マイナスの値でてる
             arm_azimuthal_angle = calculation.azimuthalAngle(
                 x = picture_coordinates[0],
                 y = picture_coordinates[1]
@@ -68,14 +69,14 @@ if __name__ == '__main__':
                 # アームを連続的に動かして焦点距離を特定＆動く
                 arm_current_polar_angle = arm.searchFocalLengthContinuously(
                     search_range = arm_possible_polar_angle_range,
-                    sensor_threshold = sensor_threshold
+                    sensor_threshold = sensor_threshold                
                 )
                 if arm_current_polar_angle == 0:
                     # 何もなかった時の処理入れる？ TODO
-                    break
+                    continue
                 current_focal_length = calculation.getFocalLength(
                         picture_coordinates = picture_coordinates,
-                        polar_angle = arm_current_polar_angle,
+                        polar_angle = arm_current_polar_angle                    
                     )
                 # 求めたfocal_lengthを記録
                 focal_length_list.append(current_focal_length)
@@ -85,7 +86,7 @@ if __name__ == '__main__':
                 # 今までのfocal_lengthからxy軸との角度を求める
                 arm_polar_angle = calculation.getPolarAngleFromFocalLength(
                     picture_coordinates = picture_coordinates,
-                    focal_length = sum(focal_length_list)/len(focal_length_list)
+                    focal_length = sum(focal_length_list)/len(focal_length_list)                
                 )
                 # 移動
                 arm.setPolarAngle(polar_angle = arm_polar_angle)
@@ -95,7 +96,7 @@ if __name__ == '__main__':
                 if sensor_value <= sensor_threshold:
                     current_focal_length = calculation.getFocalLength(
                             picture_coordinates = picture_coordinates,
-                            polar_angle = arm_polar_angle,
+                            polar_angle = arm_polar_angle                        
                         )
                     focal_length_list.append(current_focal_length)
                     continue
@@ -105,14 +106,14 @@ if __name__ == '__main__':
                     # アームを連続的に動かして焦点距離を特定＆動く
                     arm_current_polar_angle = arm.searchFocalLengthContinuously(
                         search_range = [arm_polar_angle - SUB_SEARCH_RANGE, arm_polar_angle + SUB_SEARCH_RANGE, ],
-                        sensor_threshold = sensor_threshold
+                        sensor_threshold = sensor_threshold                    
                     )
                     if arm_current_polar_angle == 0:
                         # 何もなかった時の処理入れる？ TODO
                         break
                     current_focal_length = calculation.getFocalLength(
                         picture_coordinates = picture_coordinates,
-                        polar_angle = arm_current_polar_angle,
+                        polar_angle = arm_current_polar_angle                    
                     )
                     # 求めたfocal_lengthを記録
                     focal_length_list.append(current_focal_length)

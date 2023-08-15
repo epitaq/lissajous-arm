@@ -40,7 +40,6 @@ class Camera :
             cx = int(M['m10'] / M['m00'])
             cy = int(M['m01'] / M['m00'])
         # 面積を求める
-        # めんせきが多きほうが近い｜正面を向いてるから危険性高い
         s = cv2.contourArea(palm_array) 
         return cx, cy, s
 
@@ -61,18 +60,19 @@ class Camera :
                 # 手の平重心計算
                 cx, cy, s = self.calc_palm_moment(image, hand_landmarks)
                 print('cx,cy,s: ',str(cx),str(cy),str(s))
+                # 面積が大きい近い｜正面を向いてるから危険性高い
                 if picture_coordinates:
                     if picture_coordinates[2] < s:
-                        picture_coordinates = [cx-(image_width/2), (image_height/2)-cy]
+                        picture_coordinates = [cx-(image_width/2), (image_height/2)-cy, s]
                 else:
-                    picture_coordinates = [cx-(image_width/2), (image_height/2)-cy]
+                    picture_coordinates = [cx-(image_width/2), (image_height/2)-cy, s]
                 
                 cv2.circle(image_with_circle, (cx, cy), 12, (0, 255, 0), 2)
 
         # cv2.imshow('MediaPipe Hand Demo', image_with_circle)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
-        return picture_coordinates
+        return picture_coordinates[:2]
 
 # import camera
 # cam = camera.Camera()

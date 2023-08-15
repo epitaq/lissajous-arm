@@ -56,8 +56,8 @@ class Arm:
             サーボをうごかす
             anglesは辞書型で入力する。-1の時は動かさない
         '''
-        print('moveServos: ')
-        print(angles)
+        # print('moveServos: ',end=' ')
+        # print(angles)
         for id, channel in self.SERVO_CHANNELS.items():
             angle = angles[id]
             if (angle != -1) | (not np.isnan(angle)):
@@ -84,7 +84,7 @@ class Arm:
             角度の差分からサーボをうごかす
             anglesは辞書型で入力する。
         '''
-        print('moveServos: ')
+        print('moveServosDifference: ',end=' ')
         print(difference_angles)
         angles = copy.copy(self.SERVO_CHANNELS)
         current_angles_list = self.getServoAngles()
@@ -92,7 +92,7 @@ class Arm:
             difference_angle = difference_angles[id] # 差分
             current_angle = current_angles_list[id] # 現在の
             angles[id] = difference_angle + current_angle
-            print('servo difference: '+ id + str(difference_angle + current_angle))
+            print('  servo difference: '+ id + str(difference_angle + current_angle))
         self.moveServos(angles=angles)
         return
 
@@ -134,9 +134,9 @@ class Arm:
         )
         self.composite_root_link_arm_angle = self.arm_between_angle + self.composite_root_head_arm_angle
 
-        print('between_angle: ' + str(between_angle))
-        print('composite_root_head_arm_angle: '+str(self.composite_root_head_arm_angle))
-        print('composite_root_link_arm_angle: '+str(self.composite_root_link_arm_angle))
+        print('  between_angle: ' + str(between_angle))
+        print('  composite_root_head_arm_angle: '+str(self.composite_root_head_arm_angle))
+        print('  composite_root_link_arm_angle: '+str(self.composite_root_link_arm_angle))
 
         angles = self.getServoAngles()
         root_head_servo = angles['root_head_servo']
@@ -175,8 +175,8 @@ class Arm:
         print('setPolarAngle: ', str(polar_angle))
         root_head_servo = polar_angle + self.composite_root_head_arm_angle
         root_link_servo = polar_angle + self.composite_root_link_arm_angle
-        print('root_head_servo: '+ str(root_head_servo))
-        print('root_link_servo: '+ str(root_link_servo))
+        # print('root_head_servo: '+ str(root_head_servo))
+        # print('root_link_servo: '+ str(root_link_servo))
         self.moveServos({ 
             'root_servo': -1,
             'head_servo': -1,
@@ -189,7 +189,7 @@ class Arm:
         '''
             変更可能な天頂角の範囲リストを返す
         '''
-        min_range = int(self.composite_root_head_arm_angle)
+        min_range = - int(self.composite_root_head_arm_angle)
         max_range = int(180-self.composite_root_link_arm_angle)
         angle_range = [min_range, max_range]
         # 保存
@@ -201,12 +201,19 @@ class Arm:
             連続的にサーボをうごかし焦点距離を探る
             反応なかったら０を返す
         '''
+        print('searchFocalLengthContinuously: ')
+        print('  search_range: ',end=' ')
+        print(search_range)
+        print('  sensor_threshold: ',str(sensor_threshold))
         min_range = max(self.possible_polar_angle_range[0], search_range[0])
         max_range = min(self.possible_polar_angle_range[1], search_range[1])
+        print('  min&max_range: ',str(min_range),str(max_range))
         for angle in range(min_range, max_range):
+            self.setPolarAngle(angle)
             # 超音波センサーの値を取得 [mm]
             sensor_value: float = self.sensor.getValue()
             if sensor_value < sensor_threshold:
+                print('  return: ', str(angle))
                 return angle
         else:
             return 0
