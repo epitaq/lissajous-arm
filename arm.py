@@ -14,9 +14,9 @@ class Arm:
         ここではアーム動作を一つにまとめほかからはただの棒のようにみせる
     '''
 
-    sensor = sensor.Sensor()
-
     def __init__ (self, SERVO_CHANNELS, ARM_LENGTHS):
+        # センサーの初期化
+        self.sensor = sensor.Sensor()
         # サーボの初期設定
         self.kit = ServoKit(channels=8)
         # sg90にパルスを揃える
@@ -48,6 +48,8 @@ class Arm:
 
         # 動作可能な天頂角範囲
         self.possible_polar_angle_range = []
+        
+        print('Arm [OK]')
 
     def moveServos (self, angles= {'root_servo': -1,'head_servo':-1,'root_head_servo': -1,'root_link_servo': -1}):
         '''
@@ -58,7 +60,7 @@ class Arm:
         print(angles)
         for id, channel in self.SERVO_CHANNELS.items():
             angle = angles[id]
-            if angle != -1:
+            if (angle != -1) | (not np.isnan(angle)):
                 # 範囲の制限
                 if id == 'root_servo': 
                     if angle > 360: angle-=360
@@ -117,6 +119,7 @@ class Arm:
         '''
             アームが動作する半径に長さをセットする
         '''
+        print('setRotationRadius: ', str(rotation_radius))
         between_angle = calculation.angleFromRotationRadius(
             rotation_radius = rotation_radius, 
             length_0 = self.root_head_arm_length, 
@@ -159,6 +162,7 @@ class Arm:
     def setAzimuthalAngle(self, azimuthal_angle: float):
         # channel = self.SERVO_CHANNELS['root_servo']
         # self.kit.servo[channel].angle = azimuthal_angle
+        print('setAzimuthalAngle: ', str(azimuthal_angle))
         self.moveServos({ 
             'root_servo': azimuthal_angle,
             'head_servo': -1,
@@ -168,13 +172,16 @@ class Arm:
         return
 
     def setPolarAngle(self, polar_angle: float):
-        print('root_head_servo: '+ str(polar_angle + self.composite_root_head_arm_angle))
-        print('root_link_servo: '+ str(polar_angle + self.composite_root_link_arm_angle))
+        print('setPolarAngle: ', str(polar_angle))
+        root_head_servo = polar_angle + self.composite_root_head_arm_angle
+        root_link_servo = polar_angle + self.composite_root_link_arm_angle
+        print('root_head_servo: '+ str(root_head_servo))
+        print('root_link_servo: '+ str(root_link_servo))
         self.moveServos({ 
             'root_servo': -1,
             'head_servo': -1,
-            'root_head_servo': polar_angle + self.composite_root_head_arm_angle,
-            'root_link_servo': polar_angle + self.composite_root_link_arm_angle
+            'root_head_servo': root_head_servo,
+            'root_link_servo': root_link_servo
         })
         return
 
@@ -198,7 +205,7 @@ class Arm:
         max_range = min(self.possible_polar_angle_range[1], search_range[1])
         for angle in range(min_range, max_range):
             # 超音波センサーの値を取得 [mm]
-            sensor_value: float = sensor.getValue()
+            sensor_value: float = self.sensor.getValue()
             if sensor_value < sensor_threshold:
                 return angle
         else:

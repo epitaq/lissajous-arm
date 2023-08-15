@@ -20,9 +20,13 @@ if __name__ == '__main__':
     }
 
     camera = camera.Camera()
-    arm = arm.Arm()
+    arm = arm.Arm(
+        SERVO_CHANNELS=SERVO_CHANNELS,
+        ARM_LENGTHS=ARM_LENGTHS
+    )
     sensor = sensor.Sensor()
     # calculation = calculation.Calculation()
+    print('instance [OK]')
 
     # センサーに反応があった時追跡する範囲
     TRACKING_RANGE = 300
@@ -31,33 +35,36 @@ if __name__ == '__main__':
     # ピンホールカメラでいう焦点距離
     focal_length_list: list[float] = []
     # アームをどの長さで動かすのか[mm] TODO 可変式にしたい
-    rotation_radius: float = 100.0
+    rotation_radius: float = 300.0
 
+    print('start lissajous-arm')
     while True:
         # カメラから画像での手の二次元座標を取得[pixel]
         # 画像の中心を0とする
         picture_coordinates: list[float] = camera.getPictureCoordinates() 
-        # アームの回転半径をせっと
-        arm.setRotationRadius(
-            rotation_radius=rotation_radius
-        )
-        # 画像の二次元座標からアームのz軸方向の回転を決定＆移動
-        # 回転したできた新たな二次元座標の軸をxy軸とする
-        arm_azimuthal_angle = calculation.azimuthalAngle(
-            x = picture_coordinates[0],
-            y = picture_coordinates[1]
-        )
-        arm.setAzimuthalAngle(azimuthal_angle = arm_azimuthal_angle)
-        # アームがxy軸とどれくらい角度を取れるのか[angle]
-        arm_possible_polar_angle_range: list[int] = arm.getPossiblePolarAngleRange()
         # 超音波センサーの閾値 [mm]
         sensor_threshold: float = TRACKING_RANGE - rotation_radius
 
         # カメラに手の反応があった時
-        if len(picture_coordinates) != 0 :
+        if picture_coordinates:
+            print('target [OK]')
+            # 画像の二次元座標からアームのz軸方向の回転を決定＆移動
+            # 回転したできた新たな二次元座標の軸をxy軸とする
+            arm_azimuthal_angle = calculation.azimuthalAngle(
+                x = picture_coordinates[0],
+                y = picture_coordinates[1]
+            )
+            arm.setAzimuthalAngle(azimuthal_angle = arm_azimuthal_angle)
+            # アームの回転半径をせっと
+            arm.setRotationRadius(
+                rotation_radius=rotation_radius
+            )
+            # アームがxy軸とどれくらい角度を取れるのか[angle]
+            arm_possible_polar_angle_range: list[int] = arm.getPossiblePolarAngleRange()
             # アームを動かし超音波センサーに反応があった時手を見つけたことにする
             # focal_length_listがない時、つまり初回
-            if len(focal_length_list) == 0:
+            if not focal_length_list:
+                print('focal_length_list [FAILED]')
                 # アームを連続的に動かして焦点距離を特定＆動く
                 arm_current_polar_angle = arm.searchFocalLengthContinuously(
                     search_range = arm_possible_polar_angle_range,
@@ -74,6 +81,7 @@ if __name__ == '__main__':
                 focal_length_list.append(current_focal_length)
             # focal_length_listがある時はそれを元に移動し確かめる
             else:
+                print('focal_length_list [OK]')
                 # 今までのfocal_lengthからxy軸との角度を求める
                 arm_polar_angle = calculation.getPolarAngleFromFocalLength(
                     picture_coordinates = picture_coordinates,
@@ -90,7 +98,7 @@ if __name__ == '__main__':
                             polar_angle = arm_polar_angle,
                         )
                     focal_length_list.append(current_focal_length)
-                    break
+                    continue
                 # してない時は少し探索する
                 else:
                     # TODO focal_length_listを初期化した方がいいか
@@ -109,6 +117,7 @@ if __name__ == '__main__':
                     # 求めたfocal_lengthを記録
                     focal_length_list.append(current_focal_length)
         else:
+            print('target [FAILED]')
             # TODO 初期状態どうする？
             pass
 
