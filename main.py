@@ -10,7 +10,7 @@ if __name__ == '__main__':
 # ARM_LENGTHS = {'head_arm_length': 120,'root_head_arm_length': 100,'root_link_arm_length': 30}
     SERVO_CHANNELS = {
         'root_servo': 0,
-        'head_servo': 1,
+        'head_servo': 4,
         'root_head_servo': 8,
         'root_link_servo': 12
     }

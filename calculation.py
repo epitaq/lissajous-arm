@@ -7,27 +7,29 @@ def angleFromRotationRadius (rotation_radius, length_0, length_1):
     return angle
 
 def azimuthalAngle(x: float, y: float) -> float:
-    azimuthal_angle = arcTan(y / x)
+    # azimuthal_angle = arcTan(y / x)
+    azimuthal_angle = np.degrees(np.arctan2(y, x))
+    if azimuthal_angle < 0: 
+        azimuthal_angle += 180
     return azimuthal_angle
 
-# なんかおかしい TODO
-# ポーラー角の基準と取り方間違えていた
-# 90+Θで戻せる
+# 第何象限にあるかで角度はきまるはず
 def getFocalLength(picture_coordinates: list[float], polar_angle: float) -> float:
     print('getFocalLength: ',str(picture_coordinates[0]),str(picture_coordinates[1]),str(polar_angle))
-    x_2d, y_2d = picture_coordinates
-    polar_angle -= 90
-    focal_length = np.sqrt((y_2d**2)/(tan(polar_angle)**2) - (x_2d**2))
-    # focal_length = np.sqrt(abs(rotation_radius**2 - x_2d**2 - y_2d**2))
+    x, y = picture_coordinates
+    focal_length = np.sqrt(x**2 + y**2) * tan(polar_angle)
+    if y < 0:
+        focal_length *= -1
     print('  return: ',str(focal_length))
     return focal_length
 
 def getPolarAngleFromFocalLength(picture_coordinates: list[float], focal_length: float) -> float:
     print('getPolarAngleFromFocalLength: ',str(picture_coordinates[0]),str(picture_coordinates[1]),str(focal_length))
-    x_2d, y_2d = picture_coordinates
-    polar_angle = arcTan((y_2d) / (np.sqrt(x_2d**2 + focal_length**2)))
-    # polar_angle = arcSin(y_2d / rotation_radius) 
-    polar_angle += 90
+    x, y = picture_coordinates
+    polar_angle = np.degrees(np.arctan2(focal_length, np.sqrt(x**2 + y**2) ))
+    if y < 0:
+        polar_angle = 180 - polar_angle
+    print('    return: ',str(polar_angle))
     return polar_angle
 
 # sin cosの計算

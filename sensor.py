@@ -36,7 +36,7 @@ class Sensor:
     def getDistance(self):
         # TRIGピンを0.3[s]だけLOW
         GPIO.output(self.TRIG_PIN, GPIO.LOW)
-        time.sleep(0.3)
+        # time.sleep(0.3)
         # TRIGピンを0.00001[s]だけ出力(超音波発射)        
         GPIO.output(self.TRIG_PIN, True)
         time.sleep(0.00001)

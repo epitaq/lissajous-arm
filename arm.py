@@ -32,8 +32,6 @@ class Arm:
         self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
 
         # アームの初期位置の設定
-        # self.kit.servo[SERVO_CHANNELS['root_link_servo']].angle = 90
-        # self.kit.servo[SERVO_CHANNELS['root_head_servo']].angle = 0
         self.moveServos(angles={
             'root_servo': 0,
             'head_servo': 0,
@@ -61,23 +59,25 @@ class Arm:
         # print(angles)
         for id, channel in self.SERVO_CHANNELS.items():
             angle = angles[id]
-            if (angle != -1) | (not np.isnan(angle)):
+            if angle != -1 and not np.isnan(angle):
                 # 範囲の制限
-                if id == 'root_servo': 
-                    if angle > 360: angle-=360
-                    elif angle < 0: angle=0
-                else:
-                    if angle > 180: angle=180
-                    elif angle < 0: angle=0
+                if angle > 180: 
+                    print('moveServo: over 180')
+                    print('    current: ',str(angle))
+                    angle=180
+                elif angle < 0: 
+                    print('moveServo: over 0')
+                    print('    current: ',str(angle))
+                    angle=0
                 # サーボの取り付け向きによって補正が必要 
                 # 追加するたびに getServoAnglesも変更 TODO
                 if id == 'root_link_servo':
                     angle = 180 - angle
                 self.kit.servo[channel].angle = angle
-            elif id == 'head_servo':
-                # 指示があるときはそれに従うがないときは自動で追尾する
-                angle = 90 - self.composite_root_link_arm_angle
-                self.kit.servo[channel].angle = angle
+            # if id == 'head_servo':
+            #     # 指示があるときはそれに従うがないときは自動で追尾する
+            #     angle = 90 - self.composite_root_link_arm_angle
+            #     self.kit.servo[channel].angle = angle
         # 早すぎて反動がきついから遅延
         # time.sleep(0.1)
         return
@@ -140,6 +140,7 @@ class Arm:
         print('  between_angle: ' + str(between_angle))
         print('  composite_root_head_arm_angle: '+str(self.composite_root_head_arm_angle))
         print('  composite_root_link_arm_angle: '+str(self.composite_root_link_arm_angle))
+        print('  head_servo: ' + str(90 - self.composite_root_link_arm_angle))
 
         angles = self.getServoAngles()
         root_head_servo = angles['root_head_servo']
@@ -156,7 +157,7 @@ class Arm:
         # アームの変形
         self.moveServos({ 
             'root_servo': -1,
-            'head_servo': -1,
+            'head_servo': 90 - self.composite_root_link_arm_angle,
             'root_head_servo': root_head_servo,
             'root_link_servo': root_link_servo
         })
