@@ -3,6 +3,7 @@ import camera
 import sensor
 import calculation
 
+import numpy as np
 
 if __name__ == '__main__':
 # SERVO_CHANNELS = {'root_servo': 0,'head_servo': 1,'root_head_servo': 2,'root_link_servo': 3}
@@ -10,13 +11,13 @@ if __name__ == '__main__':
     SERVO_CHANNELS = {
         'root_servo': 0,
         'head_servo': 1,
-        'root_head_servo': 2,
-        'root_link_servo': 3
+        'root_head_servo': 8,
+        'root_link_servo': 12
     }
     ARM_LENGTHS = {
-        'head_arm_length': 220,
-        'root_head_arm_length': 210,
-        'root_link_arm_length': 85
+        'head_arm_length': 200,
+        'root_head_arm_length': 200,
+        'root_link_arm_length': 50
     }
 
     camera = camera.Camera()
@@ -35,7 +36,7 @@ if __name__ == '__main__':
     # ピンホールカメラでいう焦点距離
     focal_length_list: list[float] = []
     # アームをどの長さで動かすのか[mm] TODO 可変式にしたい
-    rotation_radius: float = 100.0
+    rotation_radius: float = 300.0
 
     print('start lissajous-arm')
     while True:
@@ -91,7 +92,7 @@ if __name__ == '__main__':
                 # 移動
                 arm.setPolarAngle(polar_angle = arm_polar_angle)
                 # センサーの値を取得[mm]
-                sensor_value: float = sensor.getValue()
+                sensor_value: float = sensor.getDistance()
                 # 反応した時はそのままfocalLengthに入れる
                 if sensor_value <= sensor_threshold:
                     current_focal_length = calculation.getFocalLength(
@@ -105,7 +106,7 @@ if __name__ == '__main__':
                     # TODO focal_length_listを初期化した方がいいか
                     # アームを連続的に動かして焦点距離を特定＆動く
                     arm_current_polar_angle = arm.searchFocalLengthContinuously(
-                        search_range = [arm_polar_angle - SUB_SEARCH_RANGE, arm_polar_angle + SUB_SEARCH_RANGE, ],
+                        search_range = [np.floor(arm_polar_angle - SUB_SEARCH_RANGE), np.ceil(arm_polar_angle + SUB_SEARCH_RANGE), ],
                         sensor_threshold = sensor_threshold                    
                     )
                     if arm_current_polar_angle == 0:

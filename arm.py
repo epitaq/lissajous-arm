@@ -5,6 +5,7 @@ from adafruit_servokit import ServoKit
 
 import numpy as np
 import copy
+import time
 
 import calculation
 import sensor
@@ -18,7 +19,7 @@ class Arm:
         # センサーの初期化
         self.sensor = sensor.Sensor()
         # サーボの初期設定
-        self.kit = ServoKit(channels=8)
+        self.kit = ServoKit(channels=16)
         # sg90にパルスを揃える
         for channel in SERVO_CHANNELS.values():
             self.kit.servo[channel].set_pulse_width_range(500, 2400)
@@ -77,6 +78,8 @@ class Arm:
                 # 指示があるときはそれに従うがないときは自動で追尾する
                 angle = 90 - self.composite_root_link_arm_angle
                 self.kit.servo[channel].angle = angle
+        # 早すぎて反動がきついから遅延
+        # time.sleep(0.1)
         return
 
     def moveServosDifference (self, difference_angles= {'root_servo': 0,'head_servo': 0,'root_head_servo': 0,'root_link_servo': 0}):
@@ -200,6 +203,7 @@ class Arm:
         '''
             連続的にサーボをうごかし焦点距離を探る
             反応なかったら０を返す
+            sensor_threshold:センサーの閾値
         '''
         print('searchFocalLengthContinuously: ')
         print('  search_range: ',end=' ')
@@ -208,10 +212,10 @@ class Arm:
         min_range = max(self.possible_polar_angle_range[0], search_range[0])
         max_range = min(self.possible_polar_angle_range[1], search_range[1])
         print('  min&max_range: ',str(min_range),str(max_range))
-        for angle in range(min_range, max_range):
+        for angle in range(min_range, max_range,5):
             self.setPolarAngle(angle)
             # 超音波センサーの値を取得 [mm]
-            sensor_value: float = self.sensor.getValue()
+            sensor_value: float = self.sensor.getDistance()
             if sensor_value < sensor_threshold:
                 print('  return: ', str(angle))
                 return angle
