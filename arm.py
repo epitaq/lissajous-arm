@@ -31,6 +31,12 @@ class Arm:
         self.root_head_arm_length = ARM_LENGTHS['root_head_arm_length']
         self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
 
+        # 動きかが早すぎて危ないから遅延入れる
+        self.delay = 0.00001
+        
+        # 動きを180度反転させるサーボ
+        self.reversal_servo = ['root_link_servo', 'head_servo','root_servo']
+
         # アームの初期位置の設定
         self.moveServos(angles={
             'root_servo': 0,
@@ -62,25 +68,44 @@ class Arm:
             if angle != -1 and not np.isnan(angle):
                 # 範囲の制限
                 if angle > 180: 
-                    print('moveServo: over 180')
+                    print(f'moveServo({id}): over 180')
                     print('    current: ',str(angle))
                     angle=180
                 elif angle < 0: 
-                    print('moveServo: over 0')
+                    print(f'moveServo({id}): over 0')
                     print('    current: ',str(angle))
                     angle=0
                 # サーボの取り付け向きによって補正が必要 
-                # 追加するたびに getServoAnglesも変更 TODO
-                if id == 'root_link_servo':
+                if id in self.reversal_servo:
                     angle = 180 - angle
                 self.kit.servo[channel].angle = angle
-            # if id == 'head_servo':
-            #     # 指示があるときはそれに従うがないときは自動で追尾する
-            #     angle = 90 - self.composite_root_link_arm_angle
-            #     self.kit.servo[channel].angle = angle
         # 早すぎて反動がきついから遅延
-        # time.sleep(0.1)
+        time.sleep(self.delay)
         return
+    
+    def moveServosSin (self, angles= {'root_servo': -1,'head_servo':-1,'root_head_servo': -1,'root_link_servo': -1}):
+        '''
+            sinの加速度でサーボをうごかす
+            動かす角度が大きいときはこっちのほうがいい
+            anglesは辞書型で入力する。-1の時は動かさない
+        '''
+        # 現在の角度
+        current_angles = self.getServoAngles()
+        # 現在の角度と動かしたい角度との差
+        distance_angles = copy.copy(angles)
+        print('  distance_angles: ')
+        print(distance_angles)
+        for id, angle in angles.items():
+            if angle != -1:
+                distance_angles[id] = angle - current_angles[id]
+        for i in range(0,180):
+            delta_angles = copy.copy(angles)
+            for id, angle in distance_angles.items():
+                if angle != -1:
+                    delta_angles[id] = current_angles[id] + angle*0.5*(1-calculation.cos(i))
+            self.moveServos(delta_angles)
+
+
 
     def moveServosDifference (self, difference_angles= {'root_servo': 0,'head_servo': 0,'root_head_servo': 0,'root_link_servo': 0}):
         '''
@@ -111,8 +136,8 @@ class Arm:
             # 0以下だとほかでバグるたぶん180でも
             if angle < 0: angle = 0
             elif angle > 180: angle=180
-            # 実際の角度とサーボの角度変換 TODO
-            if id == 'root_link_servo':
+            # 実際の角度とサーボの角度変換
+            if id in self.reversal_servo:
                 angle = 180 - angle
             # 登録
             angles[id] = angle
@@ -200,6 +225,7 @@ class Arm:
         self.possible_polar_angle_range = angle_range
         return angle_range
 
+    # TODO ここにもサイン制御を入れる
     def searchFocalLengthContinuously(self, search_range: list[int], sensor_threshold: float) -> float:
         '''
             連続的にサーボをうごかし焦点距離を探る
@@ -213,7 +239,7 @@ class Arm:
         min_range = max(self.possible_polar_angle_range[0], search_range[0])
         max_range = min(self.possible_polar_angle_range[1], search_range[1])
         print('  min&max_range: ',str(min_range),str(max_range))
-        for angle in range(min_range, max_range,5):
+        for angle in range(min_range, max_range):
             self.setPolarAngle(angle)
             # 超音波センサーの値を取得 [mm]
             sensor_value: float = self.sensor.getDistance()
