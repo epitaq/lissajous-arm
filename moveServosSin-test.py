@@ -14,9 +14,4 @@ ARM_LENGTHS = {
 arm = arm.Arm(SERVO_CHANNELS, ARM_LENGTHS)
 print(arm.getServoAngles())
 
-arm.setRotationRadius(300)
-
-while True:
-    i = int(input('angle: '))
-    arm.setPolarAngle(i)
-    
+arm.moveServosSin(angles= {'root_servo': 30,'head_servo':-1,'root_head_servo': 120,'root_link_servo': 180})

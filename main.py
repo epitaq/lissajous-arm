@@ -74,6 +74,7 @@ if __name__ == '__main__':
                 )
                 if arm_current_polar_angle == 0:
                     # 何もなかった時の処理入れる？ TODO
+                    print('could not find target !')
                     continue
                 current_focal_length = calculation.getFocalLength(
                         picture_coordinates = picture_coordinates,
@@ -89,6 +90,13 @@ if __name__ == '__main__':
                     picture_coordinates = picture_coordinates,
                     focal_length = sum(focal_length_list)/len(focal_length_list)                
                 )
+                # 象限によってとりうる角度決まってる、y軸正ならば90度以内、負なら90度以上
+                if picture_coordinates[1] > 0 and arm_polar_angle > 90:
+                    print('[ERROR] polar_angle is over 90')
+                    continue
+                elif picture_coordinates[1] < 0 and arm_polar_angle < 90:
+                    print('[ERROR] polar_angle is not over 90')
+                    continue
                 # 移動
                 arm.setPolarAngle(polar_angle = arm_polar_angle)
                 # センサーの値を取得[mm]
@@ -100,18 +108,20 @@ if __name__ == '__main__':
                             polar_angle = arm_polar_angle                        
                         )
                     focal_length_list.append(current_focal_length)
+                    print('add current_focal_length !')
                     continue
                 # してない時は少し探索する
                 else:
                     # TODO focal_length_listを初期化した方がいいか
                     # アームを連続的に動かして焦点距離を特定＆動く
                     arm_current_polar_angle = arm.searchFocalLengthContinuously(
-                        search_range = [np.floor(arm_polar_angle - SUB_SEARCH_RANGE), np.ceil(arm_polar_angle + SUB_SEARCH_RANGE), ],
+                        search_range = [int(np.floor(arm_polar_angle - SUB_SEARCH_RANGE)), int(np.ceil(arm_polar_angle + SUB_SEARCH_RANGE))],
                         sensor_threshold = sensor_threshold                    
                     )
                     if arm_current_polar_angle == 0:
                         # 何もなかった時の処理入れる？ TODO
-                        break
+                        print('could not find target !')
+                        continue
                     current_focal_length = calculation.getFocalLength(
                         picture_coordinates = picture_coordinates,
                         polar_angle = arm_current_polar_angle                    
