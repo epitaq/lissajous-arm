@@ -1,4 +1,5 @@
 import arm
+import time
 
 SERVO_CHANNELS = {
     'root_servo': 0,
@@ -13,5 +14,14 @@ ARM_LENGTHS = {
 }
 arm = arm.Arm(SERVO_CHANNELS, ARM_LENGTHS)
 print(arm.getServoAngles())
+time.sleep(1)
+arm.setRotationRadius(
+                rotation_radius=300
+            )
+time.sleep(1)
 
-arm.moveServosSin(angles= {'root_servo': 30,'head_servo':-1,'root_head_servo': 120,'root_link_servo': 180})
+
+# angle = int(input('angle: '))
+# arm.setPolarAngle(angle)
+
+# arm.searchFocalLengthContinuously(search_range =  [60,120], sensor_threshold= 0)

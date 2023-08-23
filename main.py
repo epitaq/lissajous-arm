@@ -84,7 +84,8 @@ if __name__ == '__main__':
                 focal_length_list.append(current_focal_length)
             # focal_length_listがある時はそれを元に移動し確かめる
             else:
-                print('focal_length_list [OK]')
+                print('focal_length_list [OK]', end=' ')
+                print(focal_length_list)
                 # 今までのfocal_lengthからxy軸との角度を求める
                 arm_polar_angle = calculation.getPolarAngleFromFocalLength(
                     picture_coordinates = picture_coordinates,

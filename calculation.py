@@ -21,7 +21,10 @@ def getFocalLength(picture_coordinates: list[float], polar_angle: float) -> floa
     if y < 0:
         focal_length *= -1
     print('  return: ',str(focal_length))
-    return focal_length
+    # 計算上ありえないと思うが負の値だとアームが壊れるから絶対値をつける
+    if focal_length < 0:
+        print('[FAILED] focal_length is minus')
+    return abs(focal_length)
 
 def getPolarAngleFromFocalLength(picture_coordinates: list[float], focal_length: float) -> float:
     print('getPolarAngleFromFocalLength: ',str(picture_coordinates[0]),str(picture_coordinates[1]),str(focal_length))
@@ -30,7 +33,21 @@ def getPolarAngleFromFocalLength(picture_coordinates: list[float], focal_length:
     if y < 0:
         polar_angle = 180 - polar_angle
     print('    return: ',str(polar_angle))
-    return polar_angle
+    # 2
+    if polar_angle < 0:
+        print('[FAILED] polar_angle is minus')
+    return abs(polar_angle)
+
+def getStep(angle):
+    '''
+        sinを使った制御用の速度調節用
+    '''
+    angle = abs(angle)
+    if angle > 100: return 1
+    elif 100 >= angle > 45: return 3
+    elif 45 >= angle > 20: return 5
+    elif 20 >= angle >= 10: return 20
+    elif 10 > angle : return -1
 
 # sin cosの計算
 def sin (angle):

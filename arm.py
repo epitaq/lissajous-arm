@@ -10,6 +10,9 @@ import time
 import calculation
 import sensor
 
+# from adafruit_servokit import ServoKit
+# kit = ServoKit(channels=16)
+
 class Arm:
     '''
         ここではアーム動作を一つにまとめほかからはただの棒のようにみせる
@@ -32,13 +35,13 @@ class Arm:
         self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
 
         # 動きかが早すぎて危ないから遅延入れる
-        self.delay = 0.00001
+        self.delay = 0.007
         
         # 動きを180度反転させるサーボ
-        self.reversal_servo = ['root_link_servo', 'head_servo','root_servo']
+        self.reversal_servo = ['root_link_servo','root_servo']
 
         # アームの初期位置の設定
-        self.moveServos(angles={
+        self.moveServosSin(angles={
             'root_servo': 0,
             'head_servo': 0,
             'root_head_servo': 0,
@@ -52,7 +55,7 @@ class Arm:
         self.composite_root_link_arm_angle = 0
 
         # 動作可能な天頂角範囲
-        self.possible_polar_angle_range = []
+        self.possible_polar_angle_range = [0,180]
         
         print('Arm [OK]')
 
@@ -61,10 +64,10 @@ class Arm:
             サーボをうごかす
             anglesは辞書型で入力する。-1の時は動かさない
         '''
-        # print('moveServos: ',end=' ')
-        # print(angles)
+        # print(f'moveServos: {angles}')
         for id, channel in self.SERVO_CHANNELS.items():
             angle = angles[id]
+            # print(f'moveServo({id}): {angle}')
             if angle != -1 and not np.isnan(angle):
                 # 範囲の制限
                 if angle > 180: 
@@ -89,23 +92,28 @@ class Arm:
             動かす角度が大きいときはこっちのほうがいい
             anglesは辞書型で入力する。-1の時は動かさない
         '''
+        print(f'moveServoSin: {angles}')
         # 現在の角度
         current_angles = self.getServoAngles()
         # 現在の角度と動かしたい角度との差
         distance_angles = copy.copy(angles)
-        print('  distance_angles: ')
-        print(distance_angles)
         for id, angle in angles.items():
             if angle != -1:
                 distance_angles[id] = angle - current_angles[id]
-        for i in range(0,180):
+        print('  distance_angles: ')
+        print(distance_angles)
+        # 動かす角度が短すぎるとおそくなる
+        step = calculation.getStep(max(map(abs,distance_angles.values())))
+        print('  step: ',str(step))
+        if step == -1:
+            self.moveServos(angles)
+            return 
+        for i in range(0,180,step):
             delta_angles = copy.copy(angles)
             for id, angle in distance_angles.items():
                 if angle != -1:
                     delta_angles[id] = current_angles[id] + angle*0.5*(1-calculation.cos(i))
             self.moveServos(delta_angles)
-
-
 
     def moveServosDifference (self, difference_angles= {'root_servo': 0,'head_servo': 0,'root_head_servo': 0,'root_link_servo': 0}):
         '''
@@ -192,7 +200,7 @@ class Arm:
         # channel = self.SERVO_CHANNELS['root_servo']
         # self.kit.servo[channel].angle = azimuthal_angle
         print('setAzimuthalAngle: ', str(azimuthal_angle))
-        self.moveServos({ 
+        self.moveServosSin({ 
             'root_servo': azimuthal_angle,
             'head_servo': -1,
             'root_head_servo': -1,
@@ -204,9 +212,7 @@ class Arm:
         print('setPolarAngle: ', str(polar_angle))
         root_head_servo = polar_angle + self.composite_root_head_arm_angle
         root_link_servo = polar_angle + self.composite_root_link_arm_angle
-        # print('root_head_servo: '+ str(root_head_servo))
-        # print('root_link_servo: '+ str(root_link_servo))
-        self.moveServos({ 
+        self.moveServosSin({ 
             'root_servo': -1,
             'head_servo': -1,
             'root_head_servo': root_head_servo,
@@ -218,14 +224,26 @@ class Arm:
         '''
             変更可能な天頂角の範囲リストを返す
         '''
-        min_range = - int(self.composite_root_head_arm_angle)
-        max_range = int(180-self.composite_root_link_arm_angle)
+        min_range = - int(np.ceil(self.composite_root_head_arm_angle))
+        max_range = int(np.floor(180-self.composite_root_link_arm_angle))
         angle_range = [min_range, max_range]
         # 保存
         self.possible_polar_angle_range = angle_range
         return angle_range
 
-    # TODO ここにもサイン制御を入れる
+    def _setPolarAngleNoSin(self, polar_angle: float):
+        # print('_setPolarAngleNoSin: ', str(polar_angle))
+        root_head_servo = polar_angle + self.composite_root_head_arm_angle
+        root_link_servo = polar_angle + self.composite_root_link_arm_angle
+        self.moveServos({ 
+            'root_servo': -1,
+            'head_servo': -1,
+            'root_head_servo': root_head_servo,
+            'root_link_servo': root_link_servo
+        })
+        return
+    
+    # TODO 初期位置を現在位置から近い方にセットする
     def searchFocalLengthContinuously(self, search_range: list[int], sensor_threshold: float) -> float:
         '''
             連続的にサーボをうごかし焦点距離を探る
@@ -239,12 +257,18 @@ class Arm:
         min_range = max(self.possible_polar_angle_range[0], search_range[0])
         max_range = min(self.possible_polar_angle_range[1], search_range[1])
         print('  min&max_range: ',str(min_range),str(max_range))
-        for angle in range(min_range, max_range):
-            self.setPolarAngle(angle)
+        # ゆっくり初期位置に移動
+        self.setPolarAngle(min_range)
+        step = calculation.getStep(max_range - min_range)
+        print('  step: ',str(step))
+        if step==-1:
+            return 0
+        for i in range(0,180,step):
+            angle = min_range + (max_range - min_range)*0.5*(1-calculation.cos(i))
+            self._setPolarAngleNoSin(angle)
             # 超音波センサーの値を取得 [mm]
             sensor_value: float = self.sensor.getDistance()
             if sensor_value < sensor_threshold:
                 print('  return: ', str(angle))
                 return angle
-        else:
-            return 0
+        else: return 0
