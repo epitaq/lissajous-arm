@@ -9,6 +9,7 @@ import time
 
 import calculation
 import sensor
+import led
 
 # from adafruit_servokit import ServoKit
 # kit = ServoKit(channels=16)
@@ -21,6 +22,8 @@ class Arm:
     def __init__ (self, SERVO_CHANNELS, ARM_LENGTHS):
         # センサーの初期化
         self.sensor = sensor.Sensor()
+        # LEDの初期化
+        self.led = led.Led()
         # サーボの初期設定
         self.kit = ServoKit(channels=16)
         # sg90にパルスを揃える
@@ -35,7 +38,7 @@ class Arm:
         self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
 
         # 動きかが早すぎて危ないから遅延入れる
-        self.delay = 0
+        self.delay = 0.01
         
         # 動きを180度反転させるサーボ
         self.reversal_servo = ['root_link_servo','root_servo']
@@ -82,8 +85,6 @@ class Arm:
                 if id in self.reversal_servo:
                     angle = 180 - angle
                 self.kit.servo[channel].angle = angle
-        # 早すぎて反動がきついから遅延
-        time.sleep(self.delay)
         return
     
     def moveServosSin (self, angles= {'root_servo': -1,'head_servo':-1,'root_head_servo': -1,'root_link_servo': -1}):
@@ -114,6 +115,8 @@ class Arm:
                 if angle != -1:
                     delta_angles[id] = current_angles[id] + angle*0.5*(1-calculation.cos(i))
             self.moveServos(delta_angles)
+            # 早すぎて反動がきついから遅延
+            time.sleep(self.delay)
 
     def moveServosDifference (self, difference_angles= {'root_servo': 0,'head_servo': 0,'root_head_servo': 0,'root_link_servo': 0}):
         '''
@@ -220,6 +223,13 @@ class Arm:
         })
         return
 
+    def getPolarAngle(self):
+        print('getPolarAngle: ')
+        current_angles = self.getServoAngles()
+        current_polarAngle = current_angles['root_head_servo'] - self.composite_root_head_arm_angle
+        print(f'  return: {current_polarAngle}')
+        return current_polarAngle
+
     def getPossiblePolarAngleRange(self) -> list[int]:
         '''
             変更可能な天頂角の範囲リストを返す
@@ -250,26 +260,40 @@ class Arm:
             反応なかったら０を返す
             sensor_threshold:センサーの閾値
         '''
-        print('searchFocalLengthContinuously: ')
+        print('\nsearchFocalLengthContinuously: ')
         print('  search_range: ',end=' ')
         print(search_range)
         print('  sensor_threshold: ',str(sensor_threshold))
         min_range = max(self.possible_polar_angle_range[0], search_range[0])
         max_range = min(self.possible_polar_angle_range[1], search_range[1])
         print('  min&max_range: ',str(min_range),str(max_range))
-        # ゆっくり初期位置に移動
-        self.setPolarAngle(min_range)
+        current_polarAngle = self.getPolarAngle()
         step = calculation.getStep(max_range - min_range)
         print('  step: ',str(step))
+        # 初期位置に移動
+        # 範囲のうち現在の位置から近い方に移動
+        if abs(current_polarAngle-min_range) < abs(current_polarAngle-max_range):
+            # 大きくしていく
+            start_angle = min_range
+            pm = 1
+        else:
+            # 小さくしていく
+            start_angle = max_range
+            pm = -1
+        self.setPolarAngle(start_angle)
         if step==-1:
             return 0
         for i in range(0,180,step):
-            angle = min_range + (max_range - min_range)*0.5*(1-calculation.cos(i))
-            print('angle: ',angle)
+            angle = start_angle + pm*(max_range - min_range)*0.5*(1-calculation.cos(i))
             self._setPolarAngleNoSin(angle)
             # 超音波センサーの値を取得 [mm]
             sensor_value: float = self.sensor.getDistance()
             if sensor_value < sensor_threshold:
+                self.led.setLed(True)
                 print('  return: ', str(angle))
                 return angle
+            else:
+                self.led.setLed(False)
+            # 遅延ここで
+            time.sleep(self.delay)
         else: return 0

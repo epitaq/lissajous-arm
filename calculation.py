@@ -50,7 +50,7 @@ def _getStep(angle):
     elif 10 > angle : return -1
 
 def getStep(angle):
-    return abs(180/angle)
+    return int(np.ceil(180/angle))
 
 # sin cosの計算
 def sin (angle):

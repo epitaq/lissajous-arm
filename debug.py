@@ -19,4 +19,4 @@ arm.setRotationRadius(300)
 while True:
     i = int(input('angle: '))
     arm.setPolarAngle(i)
-    
+    print(arm.getPolarAngle())

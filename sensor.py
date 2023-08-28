@@ -34,6 +34,7 @@ class Sensor:
 
     # 距離計測
     def getDistance(self):
+        # print('sensor: ')
         # TRIGピンを0.3[s]だけLOW
         GPIO.output(self.TRIG_PIN, GPIO.LOW)
         # time.sleep(0.3)
@@ -47,7 +48,9 @@ class Sensor:
         distance = self.v * t/2
         # cm -> mm
         distance *= 10 
+        # print(f'  return: {distance/10}cm')
         return distance
+
 
 # import sensor
 # sens = sensor.Sensor()

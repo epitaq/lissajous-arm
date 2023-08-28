@@ -7,7 +7,7 @@ SERVO_CHANNELS = {
     'root_link_servo': 12
 }
 ARM_LENGTHS = {
-    'head_arm_length': 200,
+    'head_arm_length': 120,
     'root_head_arm_length': 200,
     'root_link_arm_length': 50
 }
