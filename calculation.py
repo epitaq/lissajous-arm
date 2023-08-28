@@ -38,7 +38,7 @@ def getPolarAngleFromFocalLength(picture_coordinates: list[float], focal_length:
         print('[FAILED] polar_angle is minus')
     return abs(polar_angle)
 
-def getStep(angle):
+def _getStep(angle):
     '''
         sinを使った制御用の速度調節用
     '''
@@ -48,6 +48,9 @@ def getStep(angle):
     elif 45 >= angle > 20: return 5
     elif 20 >= angle >= 10: return 20
     elif 10 > angle : return -1
+
+def getStep(angle):
+    return abs(180/angle)
 
 # sin cosの計算
 def sin (angle):

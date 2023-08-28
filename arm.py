@@ -35,7 +35,7 @@ class Arm:
         self.root_link_arm_length = ARM_LENGTHS['root_link_arm_length']
 
         # 動きかが早すぎて危ないから遅延入れる
-        self.delay = 0.007
+        self.delay = 0
         
         # 動きを180度反転させるサーボ
         self.reversal_servo = ['root_link_servo','root_servo']
@@ -265,6 +265,7 @@ class Arm:
             return 0
         for i in range(0,180,step):
             angle = min_range + (max_range - min_range)*0.5*(1-calculation.cos(i))
+            print('angle: ',angle)
             self._setPolarAngleNoSin(angle)
             # 超音波センサーの値を取得 [mm]
             sensor_value: float = self.sensor.getDistance()
