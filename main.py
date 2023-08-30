@@ -34,7 +34,7 @@ if __name__ == '__main__':
     # センサーに反応があった時追跡する範囲
     TRACKING_RANGE = 300
     # 見つからなかった時用の予備の探索範囲 [angle]
-    SUB_SEARCH_RANGE = 15
+    SUB_SEARCH_RANGE = 25
     # ピンホールカメラでいう焦点距離
     focal_length_list: list[float] = [600]
     # アームをどの長さで動かすのか[mm] TODO 可変式にしたい
